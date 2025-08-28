@@ -24,7 +24,6 @@ export class AppComponent {
   qrCodeData = '';
 
   startUpload() {
-    // Hoş geldin ekranından fotoğraf yükleme ekranına geç
     this.showWelcome = false;
     this.showPhotoUpload = true;
   }

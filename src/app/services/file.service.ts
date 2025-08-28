@@ -50,11 +50,6 @@ export class FileService {
   constructor(private http: HttpClient) {}
 
   private getApiUrl(): string {
-    // Production'da relative path kullan, development'ta localhost
-    if (typeof window !== 'undefined') {
-      const isProduction = window.location.hostname !== 'localhost';
-      return isProduction ? '/api' : 'http://localhost:3001/api';
-    }
     return '/api';
   }
 
@@ -78,7 +73,7 @@ export class FileService {
     });
 
     return this.http.post<ApiResponse<UploadResponse>>(
-      `${this.API_URL}/upload`,
+      `https://qrhatira.vercel.app/api/upload`,
       formData
     );
   }

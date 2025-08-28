@@ -33,7 +33,7 @@ export class PhotoUploadComponent {
     files: [],
   };
 
-  constructor(private fileService: FileService) {}
+  constructor(private readonly fileService: FileService) {}
 
   public isDragOver = false;
   public uploadProgress = 0;

@@ -78,19 +78,19 @@ export class FileService {
     });
 
     return this.http.post<ApiResponse<UploadResponse>>(
-      `${this.API_URL}/files/upload`,
+      `${this.API_URL}/upload`,
       formData
     );
   }
 
   // Backend'den yüklemeleri getir
   getUploadsFromBackend(): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.API_URL}/files/uploads`);
+    return this.http.get<ApiResponse<any>>(`${this.API_URL}/uploads`);
   }
 
   // Backend'den istatistikleri getir
   getStatsFromBackend(): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.API_URL}/files/stats`);
+    return this.http.get<ApiResponse<any>>(`${this.API_URL}/stats`);
   }
 
   // Health check

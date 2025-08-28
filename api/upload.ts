@@ -73,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({
       success: false,
-      message: 'Sadece POST method desteklenir.'
+      message: 'Sadece POST method desteklenir.',
     });
   }
 
@@ -122,7 +122,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Memory'ye kaydet (demo için - production'da database kullanın)
     guestUploads.push(guestData);
 
-    console.log(`📤 ${firstName} ${lastName} - ${files.length} dosya yüklendi (Vercel)`);
+    console.log(
+      `📤 ${firstName} ${lastName} - ${files.length} dosya yüklendi (Vercel)`
+    );
 
     return res.status(200).json({
       success: true,
@@ -137,7 +139,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         uploadedFiles,
       },
     });
-
   } catch (error: any) {
     console.error('❌ Vercel upload hatası:', error);
     return res.status(500).json({

@@ -24,14 +24,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({
       success: false,
-      message: 'Sadece GET method desteklenir.'
+      message: 'Sadece GET method desteklenir.',
     });
   }
 
   try {
-    const totalFiles = guestUploads.reduce((acc, guest) => acc + guest.fileCount, 0);
+    const totalFiles = guestUploads.reduce(
+      (acc, guest) => acc + guest.fileCount,
+      0
+    );
     const totalSize = guestUploads.reduce((acc, guest) => {
-      return acc + guest.files.reduce((fileAcc: number, file: any) => fileAcc + file.fileSize, 0);
+      return (
+        acc +
+        guest.files.reduce(
+          (fileAcc: number, file: any) => fileAcc + file.fileSize,
+          0
+        )
+      );
     }, 0);
 
     return res.status(200).json({
@@ -41,10 +50,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         totalGuests: guestUploads.length,
         totalFiles,
         totalSizeMB: Math.round((totalSize / (1024 * 1024)) * 100) / 100,
-        lastUpload: guestUploads.length > 0 ? guestUploads[guestUploads.length - 1].uploadDate : null,
+        lastUpload:
+          guestUploads.length > 0
+            ? guestUploads[guestUploads.length - 1].uploadDate
+            : null,
       },
     });
-
   } catch (error: any) {
     console.error('❌ Vercel stats hatası:', error);
     return res.status(500).json({

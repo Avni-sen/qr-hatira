@@ -18,18 +18,21 @@ Sevgili dostlarınızın düğün/nişan fotoğraflarını kolayca toplayabilece
 ## 🛠️ Teknolojiler
 
 ### Frontend
+
 - **Angular 19** - Modern framework
 - **TypeScript** - Type safety
 - **TailwindCSS** - Utility-first CSS
 - **RxJS** - Reactive programming
 
 ### Backend
+
 - **Node.js + Express** - API server
-- **TypeScript** - Backend type safety  
+- **TypeScript** - Backend type safety
 - **SQLite** - Local database
 - **Multer** - File upload handling
 
 ### Deployment
+
 - **Vercel** - Serverless functions
 - **Docker** - Containerization
 - **GitHub** - Version control
@@ -67,12 +70,14 @@ npm run build:all
 ## 🌐 Vercel Deployment
 
 ### Otomatik Deployment
+
 1. GitHub'a push edin
 2. [Vercel](https://vercel.com)'e girin
 3. Repository'yi import edin
 4. Deploy butonuna tıklayın!
 
 ### Manuel Deployment
+
 ```bash
 npm install -g vercel
 vercel --prod
@@ -108,7 +113,7 @@ wedding-photo-share/
 FRONTEND_URL=http://localhost:4200
 PORT=3001
 
-# Production  
+# Production
 FRONTEND_URL=https://your-domain.com
 NODE_ENV=production
 ```
@@ -116,6 +121,7 @@ NODE_ENV=production
 ### Custom Domain
 
 Vercel'de custom domain eklemek için:
+
 1. Project Settings → Domains
 2. Domain adını ekleyin
 3. DNS kayıtlarını güncelleyin
@@ -140,7 +146,7 @@ MIT License - detaylar için [LICENSE](LICENSE) dosyasına bakın.
 
 ## 💝 Teşekkürler
 
-Bu projeyi nişan günümüz için geliştirdik. Sevgili dostlarımızın güzel anılarını bizimle paylaşması için! 
+Bu projeyi nişan günümüz için geliştirdik. Sevgili dostlarımızın güzel anılarını bizimle paylaşması için!
 
 **Nazmiye & Avni** 💕
 
@@ -149,6 +155,7 @@ Bu projeyi nişan günümüz için geliştirdik. Sevgili dostlarımızın güzel
 ### 🆘 Destek
 
 Sorun yaşarsanız:
+
 - [Issues](https://github.com/YOUR_USERNAME/wedding-photo-share/issues) açın
 - [Deployment Guide](README-DEPLOYMENT.md) kontrol edin
 

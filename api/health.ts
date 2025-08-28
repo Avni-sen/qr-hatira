@@ -18,6 +18,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     status: 'OK',
     timestamp: new Date().toISOString(),
     service: 'Wedding Photo Share API (Vercel)',
-    environment: 'production'
+    environment: 'production',
   });
 }

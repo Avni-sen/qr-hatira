@@ -40,3 +40,17 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Vercel
+.vercel
+
+# Backend/Database
+backend/uploads/
+backend/wedding_photos.db
+backend/node_modules/
+backend/dist/
+
+# Environment
+.env
+.env.local
+.env.production

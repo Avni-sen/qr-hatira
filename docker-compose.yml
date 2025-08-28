@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  wedding-app:
+    build: .
+    ports:
+      - "3000:3000" # Angular SSR
+      - "3001:3001" # Backend API
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - BACKEND_PORT=3001
+      - FRONTEND_URL=http://localhost:3000
+    volumes:
+      - uploads:/app/backend/uploads
+      - ./backend/wedding_photos.db:/app/backend/wedding_photos.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  uploads:
+    driver: local

@@ -36,11 +36,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       message: 'Yüklemeler başarıyla getirildi.',
       data: {
         totalGuests: guestUploads.length,
-        totalFiles: guestUploads.reduce((acc, guest) => acc + guest.fileCount, 0),
+        totalFiles: guestUploads.reduce(
+          (acc, guest) => acc + guest.fileCount,
+          0
+        ),
         guests: guestUploads,
       },
     });
-
   } catch (error: any) {
     console.error('❌ Vercel uploads hatası:', error);
     return res.status(500).json({

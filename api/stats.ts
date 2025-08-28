@@ -1,6 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Demo data - production'da database kullanın
+// Note: Memory storage resets on each function call
+// Use external database for persistence
 let guestUploads: any[] = [];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

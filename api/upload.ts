@@ -2,6 +2,9 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 
+// Simple memory storage for demo (use database in production)
+const guestUploads: any[] = [];
+
 // Vercel serverless function için upload handler
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -36,10 +39,6 @@ const upload = multer({
     files: 20,
   },
 });
-
-// Vercel KV veya başka bir cloud storage kullanmak gerekebilir
-// Şimdilik memory'de saklayalım (demo için)
-const guestUploads: any[] = [];
 
 function runMiddleware(req: any, res: any, fn: any) {
   return new Promise((resolve, reject) => {

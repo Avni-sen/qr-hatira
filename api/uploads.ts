@@ -1,9 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-
-// Demo data - production'da database kullanın
-// Note: Memory storage resets on each function call
-// Use external database for persistence
-let guestUploads: any[] = [];
+import { sql } from '@vercel/postgres';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -31,16 +27,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Tüm misafirleri ve dosyalarını getir
+    const guestsResult = await sql`
+      SELECT 
+        g.id,
+        g.first_name,
+        g.last_name,
+        g.qr_code,
+        g.file_count,
+        g.upload_date,
+        g.created_at
+      FROM guests g
+      ORDER BY g.upload_date DESC
+    `;
+
+    const guests = guestsResult.rows;
+    const totalGuests = guests.length;
+    const totalFiles = guests.reduce((acc, guest) => acc + guest.file_count, 0);
+
+    // Her misafir için dosyalarını getir
+    const guestsWithFiles = await Promise.all(
+      guests.map(async (guest) => {
+        const photosResult = await sql`
+          SELECT 
+            id,
+            original_name,
+            file_name,
+            file_size,
+            mime_type,
+            file_url,
+            upload_date
+          FROM photos 
+          WHERE guest_id = ${guest.id}
+          ORDER BY upload_date DESC
+        `;
+
+        return {
+          id: guest.id,
+          firstName: guest.first_name,
+          lastName: guest.last_name,
+          qrCode: guest.qr_code,
+          fileCount: guest.file_count,
+          uploadDate: guest.upload_date,
+          files: photosResult.rows.map((photo) => ({
+            id: photo.id,
+            originalName: photo.original_name,
+            fileName: photo.file_name,
+            fileSize: photo.file_size,
+            mimeType: photo.mime_type,
+            fileUrl: photo.file_url,
+            uploadDate: photo.upload_date,
+          })),
+        };
+      })
+    );
+
     return res.status(200).json({
       success: true,
       message: 'Yüklemeler başarıyla getirildi.',
       data: {
-        totalGuests: guestUploads.length,
-        totalFiles: guestUploads.reduce(
-          (acc, guest) => acc + guest.fileCount,
-          0
-        ),
-        guests: guestUploads,
+        totalGuests,
+        totalFiles,
+        guests: guestsWithFiles,
       },
     });
   } catch (error: any) {

@@ -50,7 +50,6 @@ export const uploadFiles = async (req: UploadRequest, res: Response) => {
     };
 
     const guestId = await insertGuest(guestData);
-    console.log(`👤 Misafir kaydedildi - ID: ${guestId}`);
 
     // Her dosyayı veritabanına kaydet
     const uploadedFiles = [];

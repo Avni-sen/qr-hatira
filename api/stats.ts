@@ -1,9 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-
-// Demo data - production'da database kullanın
-// Note: Memory storage resets on each function call
-// Use external database for persistence
-let guestUploads: any[] = [];
+import { sql } from '@vercel/postgres';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -31,31 +27,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const totalFiles = guestUploads.reduce(
-      (acc, guest) => acc + guest.fileCount,
-      0
-    );
-    const totalSize = guestUploads.reduce((acc, guest) => {
-      return (
-        acc +
-        guest.files.reduce(
-          (fileAcc: number, file: any) => fileAcc + file.fileSize,
-          0
-        )
-      );
-    }, 0);
+    // Toplam misafir sayısı
+    const guestsResult = await sql`SELECT COUNT(*) as total_guests FROM guests`;
+    const totalGuests = parseInt(guestsResult.rows[0].total_guests);
+
+    // Toplam dosya sayısı
+    const filesResult = await sql`SELECT COUNT(*) as total_files FROM photos`;
+    const totalFiles = parseInt(filesResult.rows[0].total_files);
+
+    // Toplam dosya boyutu
+    const sizeResult =
+      await sql`SELECT SUM(file_size) as total_size FROM photos`;
+    const totalSize = parseInt(sizeResult.rows[0].total_size || 0);
+
+    // Son yükleme tarihi
+    const lastUploadResult = await sql`
+      SELECT upload_date FROM guests 
+      ORDER BY upload_date DESC 
+      LIMIT 1
+    `;
+    const lastUpload =
+      lastUploadResult.rows.length > 0
+        ? lastUploadResult.rows[0].upload_date
+        : null;
 
     return res.status(200).json({
       success: true,
       message: 'İstatistikler başarıyla getirildi.',
       data: {
-        totalGuests: guestUploads.length,
+        totalGuests,
         totalFiles,
         totalSizeMB: Math.round((totalSize / (1024 * 1024)) * 100) / 100,
-        lastUpload:
-          guestUploads.length > 0
-            ? guestUploads[guestUploads.length - 1].uploadDate
-            : null,
+        lastUpload,
       },
     });
   } catch (error: any) {

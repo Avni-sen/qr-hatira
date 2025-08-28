@@ -1,9 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { sql } from '@vercel/postgres';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
-
-// Simple memory storage for demo (use database in production)
-const guestUploads: any[] = [];
 
 // Vercel serverless function için upload handler
 const upload = multer({
@@ -98,42 +96,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Process files (Vercel'de bu noktada files cloud storage'a kaydedilmeli)
-    const uploadedFiles = files.map((file: any) => ({
-      id: uuidv4(),
-      originalName: file.originalname,
-      fileName: `${Date.now()}-${file.originalname}`,
-      fileSize: file.size,
-      mimeType: file.mimetype,
-      // buffer: file.buffer, // Cloud storage'da kullanılacak
-    }));
+    // Guest'i Postgres'e kaydet
+    const guestResult = await sql`
+      INSERT INTO guests (first_name, last_name, qr_code, file_count)
+      VALUES (${firstName}, ${lastName}, ${qrCode || null}, ${files.length})
+      RETURNING id, first_name, last_name, upload_date
+    `;
 
-    const guestData = {
-      id: uuidv4(),
-      firstName,
-      lastName,
-      uploadDate: new Date().toISOString(),
-      fileCount: files.length,
-      qrCode: qrCode || null,
-      files: uploadedFiles,
-    };
-
-    // Memory'ye kaydet (demo için - production'da database kullanın)
-    guestUploads.push(guestData);
+    const guest = guestResult.rows[0];
+    const guestId = guest.id;
 
     console.log(
-      `📤 ${firstName} ${lastName} - ${files.length} dosya yüklendi (Vercel)`
+      `📤 ${firstName} ${lastName} - ${files.length} dosya Postgres'e kaydediliyor...`
     );
+
+    // Her dosyayı Postgres'e kaydet
+    const uploadedFiles = [];
+    for (const file of files) {
+      const fileName = `${Date.now()}-${uuidv4()}-${file.originalname}`;
+
+      // TODO: Fotoğrafları cloud storage'a yükle (Vercel Blob, Cloudinary, vb.)
+      // Şimdilik dosya bilgilerini kaydediyoruz
+      const fileResult = await sql`
+        INSERT INTO photos (guest_id, original_name, file_name, file_size, mime_type, file_url)
+        VALUES (${guestId}, ${file.originalname}, ${fileName}, ${file.size}, ${
+        file.mimetype
+      }, ${`/temp/${fileName}`})
+        RETURNING id, original_name, file_name, file_size, mime_type, upload_date
+      `;
+
+      const savedFile = fileResult.rows[0];
+      uploadedFiles.push({
+        id: savedFile.id,
+        originalName: savedFile.original_name,
+        fileName: savedFile.file_name,
+        fileSize: savedFile.file_size,
+        mimeType: savedFile.mime_type,
+        uploadDate: savedFile.upload_date,
+      });
+
+      console.log(
+        `📁 Dosya Postgres'e kaydedildi: ${file.originalname} -> ${fileName}`
+      );
+    }
 
     return res.status(200).json({
       success: true,
       message: `${files.length} dosya başarıyla yüklendi! Teşekkür ederiz ${firstName} ${lastName}! 💕`,
       data: {
-        guestId: guestData.id,
+        guestId,
         guest: {
+          id: guestId,
           firstName,
           lastName,
           fileCount: files.length,
+          uploadDate: guest.upload_date,
         },
         uploadedFiles,
       },

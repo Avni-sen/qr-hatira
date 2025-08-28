@@ -29,16 +29,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Toplam misafir sayısı
     const guestsResult = await sql`SELECT COUNT(*) as total_guests FROM guests`;
-    const totalGuests = parseInt(guestsResult.rows[0].total_guests);
+    const totalGuests = parseInt(guestsResult.rows[0]['total_guests']);
 
     // Toplam dosya sayısı
     const filesResult = await sql`SELECT COUNT(*) as total_files FROM photos`;
-    const totalFiles = parseInt(filesResult.rows[0].total_files);
+    const totalFiles = parseInt(filesResult.rows[0]['total_files']);
 
     // Toplam dosya boyutu
     const sizeResult =
       await sql`SELECT SUM(file_size) as total_size FROM photos`;
-    const totalSize = parseInt(sizeResult.rows[0].total_size || 0);
+    const totalSize = parseInt(sizeResult.rows[0]['total_size'] || 0);
 
     // Son yükleme tarihi
     const lastUploadResult = await sql`
@@ -48,7 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
     const lastUpload =
       lastUploadResult.rows.length > 0
-        ? lastUploadResult.rows[0].upload_date
+        ? lastUploadResult.rows[0]['upload_date']
         : null;
 
     return res.status(200).json({

@@ -104,7 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
 
     const guest = guestResult.rows[0];
-    const guestId = guest.id;
+    const guestId = guest['id'];
 
     console.log(
       `📤 ${firstName} ${lastName} - ${files.length} dosya Postgres'e kaydediliyor...`
@@ -127,12 +127,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const savedFile = fileResult.rows[0];
       uploadedFiles.push({
-        id: savedFile.id,
-        originalName: savedFile.original_name,
-        fileName: savedFile.file_name,
-        fileSize: savedFile.file_size,
-        mimeType: savedFile.mime_type,
-        uploadDate: savedFile.upload_date,
+        id: savedFile['id'],
+        originalName: savedFile['original_name'],
+        fileName: savedFile['file_name'],
+        fileSize: savedFile['file_size'],
+        mimeType: savedFile['mime_type'],
+        uploadDate: savedFile['upload_date'],
       });
 
       console.log(
@@ -150,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           firstName,
           lastName,
           fileCount: files.length,
-          uploadDate: guest.upload_date,
+          uploadDate: guest['upload_date'],
         },
         uploadedFiles,
       },

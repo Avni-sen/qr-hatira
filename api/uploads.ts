@@ -43,7 +43,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const guests = guestsResult.rows;
     const totalGuests = guests.length;
-    const totalFiles = guests.reduce((acc, guest) => acc + guest.file_count, 0);
+    const totalFiles = guests.reduce(
+      (acc, guest) => acc + guest['file_count'],
+      0
+    );
 
     // Her misafir için dosyalarını getir
     const guestsWithFiles = await Promise.all(
@@ -58,25 +61,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             file_url,
             upload_date
           FROM photos 
-          WHERE guest_id = ${guest.id}
+          WHERE guest_id = ${guest['id']}
           ORDER BY upload_date DESC
         `;
 
         return {
-          id: guest.id,
-          firstName: guest.first_name,
-          lastName: guest.last_name,
-          qrCode: guest.qr_code,
-          fileCount: guest.file_count,
-          uploadDate: guest.upload_date,
+          id: guest['id'],
+          firstName: guest['first_name'],
+          lastName: guest['last_name'],
+          qrCode: guest['qr_code'],
+          fileCount: guest['file_count'],
+          uploadDate: guest['upload_date'],
           files: photosResult.rows.map((photo) => ({
-            id: photo.id,
-            originalName: photo.original_name,
-            fileName: photo.file_name,
-            fileSize: photo.file_size,
-            mimeType: photo.mime_type,
-            fileUrl: photo.file_url,
-            uploadDate: photo.upload_date,
+            id: photo['id'],
+            originalName: photo['original_name'],
+            fileName: photo['file_name'],
+            fileSize: photo['file_size'],
+            mimeType: photo['mime_type'],
+            fileUrl: photo['file_url'],
+            uploadDate: photo['upload_date'],
           })),
         };
       })

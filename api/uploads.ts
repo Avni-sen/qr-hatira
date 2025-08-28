@@ -1,4 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { createGoogleDriveService } from './lib/google-drive';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -26,30 +27,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Database olmadığı için direkt Google Drive ana klasör linkini ver
+    const driveService = createGoogleDriveService();
     const parentFolderId = process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID;
-    const parentFolderLink = parentFolderId
-      ? `https://drive.google.com/drive/folders/${parentFolderId}`
-      : null;
+
+    if (!parentFolderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Google Drive ana klasör ID'si ayarlanmamış.",
+      });
+    }
+
+    const parentFolderLink = `https://drive.google.com/drive/folders/${parentFolderId}`;
+
+    // Ana klasördeki misafir klasörlerini getir
+    console.log('Ana klasördeki misafir klasörleri getiriliyor...');
+
+    // Basit bir approach: ana klasördeki stats'ları al
+    const folderStats = await driveService.getFolderStats(parentFolderId);
 
     return res.status(200).json({
       success: true,
-      message: 'Google Drive klasörü bilgileri getirildi.',
+      message: 'Google Drive yükleme bilgileri getirildi.',
       data: {
-        note: "Artık tüm yüklemeler Google Drive'da saklanmaktadır. Detaylı listeleme için Google Drive ana klasörünü ziyaret edin.",
         googleDriveMainFolder: {
           id: parentFolderId,
           link: parentFolderLink,
         },
+        stats: {
+          totalFiles: folderStats.fileCount,
+          totalSizeMB:
+            Math.round((folderStats.totalSize / (1024 * 1024)) * 100) / 100,
+          estimatedGuestFolders: Math.ceil(folderStats.fileCount / 5), // Ortalama 5 dosya per misafir
+        },
+        note: "Tüm fotoğraflar Google Drive'da misafir klasörlerinde saklanmaktadır.",
         instruction:
-          'Her misafir için ayrı klasör oluşturulmaktadır. Ana klasörden tüm misafir klasörlerini görebilirsiniz.',
+          'Ana klasöre giderek tüm misafir klasörlerini ve fotoğrafları görüntüleyebilirsiniz.',
       },
     });
   } catch (error: any) {
-    console.error('❌ Uploads endpoint hatası:', error);
+    console.error('❌ Google Drive uploads hatası:', error);
     return res.status(500).json({
       success: false,
-      message: 'Google Drive bilgileri getirilirken bir hata oluştu.',
+      message: 'Google Drive yükleme bilgileri getirilirken bir hata oluştu.',
       error: error.message,
     });
   }

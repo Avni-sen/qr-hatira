@@ -14,23 +14,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // Environment debug bilgisi
+  // Google Drive environment debug bilgisi
   console.log('Health check called');
-  console.log('Environment variables:', {
-    POSTGRES_URL: !!process.env.POSTGRES_URL,
-    DATABASE_URL: !!process.env.DATABASE_URL,
+  console.log('Google Drive Environment variables:', {
+    GOOGLE_DRIVE_CLIENT_EMAIL: !!process.env.GOOGLE_DRIVE_CLIENT_EMAIL,
+    GOOGLE_DRIVE_PRIVATE_KEY: !!process.env.GOOGLE_DRIVE_PRIVATE_KEY,
+    GOOGLE_DRIVE_PARENT_FOLDER_ID: !!process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID,
     VERCEL: process.env.VERCEL,
   });
 
   return res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    service: 'Wedding Photo Share API (Vercel)',
+    service: 'Wedding Photo Share API - Google Drive (Vercel)',
     environment: 'production',
-    debug: {
-      hasPostgresUrl: !!process.env.POSTGRES_URL,
-      hasDatabaseUrl: !!process.env.DATABASE_URL,
-      isVercel: !!process.env.VERCEL,
+    googleDrive: {
+      hasClientEmail: !!process.env.GOOGLE_DRIVE_CLIENT_EMAIL,
+      hasPrivateKey: !!process.env.GOOGLE_DRIVE_PRIVATE_KEY,
+      hasParentFolder: !!process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID,
+      parentFolderId: process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID || 'Not set',
     },
+    note: 'All photos and videos are stored in Google Drive',
   });
 }

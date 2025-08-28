@@ -44,11 +44,8 @@ Thumbs.db
 # Vercel
 .vercel
 
-# Backend/Database
-backend/uploads/
-backend/wedding_photos.db
-backend/node_modules/
-backend/dist/
+# Google Drive Service Account (if stored locally)
+google-service-account.json
 
 # Environment
 .env

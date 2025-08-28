@@ -1,5 +1,4 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '@vercel/postgres';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -27,78 +26,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Tüm misafirleri ve dosyalarını getir
-    const guestsResult = await sql`
-      SELECT 
-        g.id,
-        g.first_name,
-        g.last_name,
-        g.qr_code,
-        g.file_count,
-        g.upload_date,
-        g.created_at
-      FROM guests g
-      ORDER BY g.upload_date DESC
-    `;
-
-    const guests = guestsResult.rows;
-    const totalGuests = guests.length;
-    const totalFiles = guests.reduce(
-      (acc, guest) => acc + guest['file_count'],
-      0
-    );
-
-    // Her misafir için dosyalarını getir
-    const guestsWithFiles = await Promise.all(
-      guests.map(async (guest) => {
-        const photosResult = await sql`
-          SELECT 
-            id,
-            original_name,
-            file_name,
-            file_size,
-            mime_type,
-            file_url,
-            upload_date
-          FROM photos 
-          WHERE guest_id = ${guest['id']}
-          ORDER BY upload_date DESC
-        `;
-
-        return {
-          id: guest['id'],
-          firstName: guest['first_name'],
-          lastName: guest['last_name'],
-          qrCode: guest['qr_code'],
-          fileCount: guest['file_count'],
-          uploadDate: guest['upload_date'],
-          files: photosResult.rows.map((photo) => ({
-            id: photo['id'],
-            originalName: photo['original_name'],
-            fileName: photo['file_name'],
-            fileSize: photo['file_size'],
-            mimeType: photo['mime_type'],
-            fileUrl: photo['file_url'],
-            uploadDate: photo['upload_date'],
-          })),
-        };
-      })
-    );
+    // Database olmadığı için direkt Google Drive ana klasör linkini ver
+    const parentFolderId = process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID;
+    const parentFolderLink = parentFolderId
+      ? `https://drive.google.com/drive/folders/${parentFolderId}`
+      : null;
 
     return res.status(200).json({
       success: true,
-      message: 'Yüklemeler başarıyla getirildi.',
+      message: 'Google Drive klasörü bilgileri getirildi.',
       data: {
-        totalGuests,
-        totalFiles,
-        guests: guestsWithFiles,
+        note: "Artık tüm yüklemeler Google Drive'da saklanmaktadır. Detaylı listeleme için Google Drive ana klasörünü ziyaret edin.",
+        googleDriveMainFolder: {
+          id: parentFolderId,
+          link: parentFolderLink,
+        },
+        instruction:
+          'Her misafir için ayrı klasör oluşturulmaktadır. Ana klasörden tüm misafir klasörlerini görebilirsiniz.',
       },
     });
   } catch (error: any) {
-    console.error('❌ Vercel uploads hatası:', error);
+    console.error('❌ Uploads endpoint hatası:', error);
     return res.status(500).json({
       success: false,
-      message: 'Yüklemeler getirilirken bir hata oluştu.',
+      message: 'Google Drive bilgileri getirilirken bir hata oluştu.',
       error: error.message,
     });
   }

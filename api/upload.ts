@@ -1,7 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '@vercel/postgres';
 import multer from 'multer';
-import { v4 as uuidv4 } from 'uuid';
+import { createGoogleDriveService } from './lib/google-drive';
 
 // Vercel serverless function için upload handler
 const upload = multer({
@@ -96,63 +95,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Guest'i Postgres'e kaydet
-    const guestResult = await sql`
-      INSERT INTO guests (first_name, last_name, qr_code, file_count)
-      VALUES (${firstName}, ${lastName}, ${qrCode || null}, ${files.length})
-      RETURNING id, first_name, last_name, upload_date
-    `;
-
-    const guest = guestResult.rows[0];
-    const guestId = guest['id'];
-
     console.log(
-      `📤 ${firstName} ${lastName} - ${files.length} dosya Postgres'e kaydediliyor...`
+      `📤 ${firstName} ${lastName} - ${files.length} dosya Google Drive'a yükleniyor...`
     );
 
-    // Her dosyayı Postgres'e kaydet
-    const uploadedFiles = [];
-    for (const file of files) {
-      const fileName = `${Date.now()}-${uuidv4()}-${file.originalname}`;
+    // Google Drive servisi başlat
+    const driveService = createGoogleDriveService();
 
-      // TODO: Fotoğrafları cloud storage'a yükle (Vercel Blob, Cloudinary, vb.)
-      // Şimdilik dosya bilgilerini kaydediyoruz
-      const fileResult = await sql`
-        INSERT INTO photos (guest_id, original_name, file_name, file_size, mime_type, file_url)
-        VALUES (${guestId}, ${file.originalname}, ${fileName}, ${file.size}, ${
-        file.mimetype
-      }, ${`/temp/${fileName}`})
-        RETURNING id, original_name, file_name, file_size, mime_type, upload_date
-      `;
+    // İsim-soyisim bazlı klasör oluştur veya bul
+    const guestFolderId = await driveService.createOrFindGuestFolder(
+      firstName,
+      lastName
+    );
+    const folderLink = await driveService.getFolderLink(guestFolderId);
 
-      const savedFile = fileResult.rows[0];
-      uploadedFiles.push({
-        id: savedFile['id'],
-        originalName: savedFile['original_name'],
-        fileName: savedFile['file_name'],
-        fileSize: savedFile['file_size'],
-        mimeType: savedFile['mime_type'],
-        uploadDate: savedFile['upload_date'],
-      });
+    // Dosyaları Google Drive'a yükle
+    const driveFiles = files.map((file: any) => ({
+      buffer: file.buffer,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+    }));
 
-      console.log(
-        `📁 Dosya Postgres'e kaydedildi: ${file.originalname} -> ${fileName}`
-      );
-    }
+    const uploadedFiles = await driveService.uploadFiles(
+      driveFiles,
+      guestFolderId
+    );
+
+    console.log(`✅ ${uploadedFiles.length} dosya başarıyla Google Drive'a yüklendi!`);
 
     return res.status(200).json({
       success: true,
-      message: `${files.length} dosya başarıyla yüklendi! Teşekkür ederiz ${firstName} ${lastName}! 💕`,
+      message: `${files.length} dosya başarıyla Google Drive'a yüklendi! Teşekkür ederiz ${firstName} ${lastName}! 💕`,
       data: {
-        guestId,
         guest: {
-          id: guestId,
           firstName,
           lastName,
           fileCount: files.length,
-          uploadDate: guest['upload_date'],
+          uploadDate: new Date().toISOString(),
         },
-        uploadedFiles,
+        uploadedFiles: uploadedFiles.map(file => ({
+          originalName: file.name.split('_').slice(1).join('_'),
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.mimeType,
+          googleDriveLink: file.webViewLink,
+        })),
+        googleDriveFolder: {
+          id: guestFolderId,
+          link: folderLink,
+        },
       },
     });
   } catch (error: any) {

@@ -40,6 +40,8 @@ export class PhotoUploadComponent {
   public isUploading = false;
   public errorMessage = '';
   public successMessage = '';
+  public folderLink = '';
+  public uploadedFileCount = 0;
 
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -93,6 +95,7 @@ export class PhotoUploadComponent {
       }
 
       this.guestInfo.files.push(uploadedFile);
+      console.log('Yüklenen dosya:', this.guestInfo.files);
     });
   }
 
@@ -149,17 +152,27 @@ export class PhotoUploadComponent {
           next: (response) => {
             if (response.success) {
               this.uploadProgress = 100;
+
+              // Google Drive bilgilerini kaydet
+              if (response.data?.folder?.webViewLink) {
+                this.folderLink = response.data.folder.webViewLink;
+              }
+
+              if (response.data?.folderStats?.totalFiles) {
+                this.uploadedFileCount = response.data.folderStats.totalFiles;
+              }
+
               this.successMessage =
                 response.message ||
-                `${files.length} dosya başarıyla yüklendi! 🎉`;
+                `${files.length} dosya başarıyla Google Drive'a yüklendi! 🎉`;
 
               // Parent component'e bildirim gönder
               this.filesUploaded.emit(this.guestInfo);
 
-              // Formu temizle
+              // Formu temizle (biraz daha geç)
               setTimeout(() => {
                 this.resetForm();
-              }, 2000);
+              }, 5000); // 5 saniye bekle ki kullanıcı linki görebilsin
             } else {
               throw new Error(response.message || 'Upload failed');
             }
@@ -220,6 +233,8 @@ export class PhotoUploadComponent {
     };
     this.successMessage = '';
     this.errorMessage = '';
+    this.folderLink = '';
+    this.uploadedFileCount = 0;
   }
 
   formatFileSize(bytes: number): string {

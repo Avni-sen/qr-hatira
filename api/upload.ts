@@ -1,136 +1,208 @@
-// Tek bağımlılık: googleapis
-import { google } from 'googleapis';
-import { PassThrough } from 'stream';
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import { createGoogleDriveService } from './lib/google-drive';
+import busboy from 'busboy';
 
-const SCOPE = ['https://www.googleapis.com/auth/drive'];
-
-function getAuth() {
-  const clientEmail = process.env['GOOGLE_CLIENT_EMAIL']!;
-  const privateKey = process.env['GOOGLE_PRIVATE_KEY']!.replace(/\\n/g, '\n'); // Vercel için
-  return new google.auth.JWT(clientEmail, undefined, privateKey, SCOPE);
+interface UploadedFile {
+  buffer: Buffer;
+  fileName: string;
+  mimeType: string;
+  size: number;
 }
 
-function getDrive(auth: any) {
-  return google.drive({ version: 'v3', auth });
+interface FormData {
+  firstName: string;
+  lastName: string;
+  files: UploadedFile[];
 }
 
-async function ensureAnyoneReader(drive: any, fileId: string) {
-  try {
-    await drive.permissions.create({
-      fileId,
-      requestBody: { role: 'reader', type: 'anyone' },
+// CORS middleware
+function setCORS(res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
+// Multipart form data parser
+function parseMultipartData(req: VercelRequest): Promise<FormData> {
+  return new Promise((resolve, reject) => {
+    const bb = busboy({ headers: req.headers });
+    const formData: FormData = {
+      firstName: '',
+      lastName: '',
+      files: [],
+    };
+
+    bb.on('field', (fieldname: string, value: string) => {
+      if (fieldname === 'firstName') formData.firstName = value;
+      if (fieldname === 'lastName') formData.lastName = value;
     });
-  } catch {
-    // izin zaten varsa sessiz geç
+
+    bb.on('file', (fieldname: string, file: any, info: any) => {
+      const { filename, mimeType } = info;
+      const chunks: Buffer[] = [];
+
+      file.on('data', (chunk: Buffer) => {
+        chunks.push(chunk);
+      });
+
+      file.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        formData.files.push({
+          buffer,
+          fileName: filename || `file_${Date.now()}`,
+          mimeType: mimeType || 'application/octet-stream',
+          size: buffer.length,
+        });
+      });
+    });
+
+    bb.on('finish', () => {
+      resolve(formData);
+    });
+
+    bb.on('error', (error: any) => {
+      reject(error);
+    });
+
+    req.pipe(bb);
+  });
+}
+
+// JSON format için basit parser
+function parseJsonData(req: VercelRequest): FormData {
+  const body = req.body;
+  return {
+    firstName: body.firstName || '',
+    lastName: body.lastName || '',
+    files: [], // JSON formatında dosya gönderilmez, sadece metadata
+  };
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  setCORS(res);
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({
+      success: false,
+      message: 'Sadece POST metoduna izin verilir',
+    });
+  }
+
+  try {
+    console.log('📤 Google Drive upload isteği alındı');
+    console.log('Content-Type:', req.headers['content-type']);
+
+    // Google Drive service'i oluştur
+    const driveService = createGoogleDriveService();
+
+    let formData: FormData;
+
+    // Content-Type'a göre veri parse et
+    if (req.headers['content-type']?.includes('multipart/form-data')) {
+      console.log('📁 Multipart form data parsing...');
+      formData = await parseMultipartData(req);
+    } else if (req.headers['content-type']?.includes('application/json')) {
+      console.log('📄 JSON data parsing...');
+      formData = parseJsonData(req);
+    } else {
+      throw new Error(
+        'Desteklenmeyen Content-Type. multipart/form-data veya application/json kullanın.'
+      );
+    }
+
+    console.log(`👤 Misafir: ${formData.firstName} ${formData.lastName}`);
+    console.log(`📁 Dosya sayısı: ${formData.files.length}`);
+
+    // Misafir klasörü oluştur veya bul
+    const guestFolder = await driveService.createOrFindGuestFolder(
+      formData.firstName,
+      formData.lastName
+    );
+
+    let uploadResults: any[] = [];
+
+    // Eğer dosyalar varsa Google Drive'a yükle
+    if (formData.files.length > 0) {
+      console.log("📤 Dosyalar Google Drive'a yükleniyor...");
+
+      const filesToUpload = formData.files.map((file) => ({
+        buffer: file.buffer,
+        fileName: file.fileName,
+        mimeType: file.mimeType,
+      }));
+
+      uploadResults = await driveService.uploadMultipleFiles(
+        filesToUpload,
+        guestFolder.id
+      );
+
+      console.log(`✅ ${uploadResults.length} dosya başarıyla yüklendi`);
+    }
+
+    // Klasör istatistiklerini al
+    const folderStats = await driveService.getFolderStats(guestFolder.id);
+
+    // Başarılı yanıt
+    const response = {
+      success: true,
+      message: `${
+        formData.files.length > 0
+          ? formData.files.length + ' dosya'
+          : 'Bilgiler'
+      } başarıyla Google Drive'a yüklendi! 💕`,
+      data: {
+        uploadDate: new Date().toISOString(),
+        guest: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+        },
+        folder: {
+          id: guestFolder.id,
+          name: guestFolder.name,
+          webViewLink: guestFolder.webViewLink,
+        },
+        uploadedFiles: uploadResults,
+        folderStats: {
+          totalFiles: folderStats.fileCount,
+          totalSize: folderStats.totalSize,
+        },
+      },
+    };
+
+    console.log('✅ Upload işlemi tamamlandı');
+    return res.status(200).json(response);
+  } catch (error: any) {
+    console.error('❌ Upload hatası:', error);
+
+    // Hata tipine göre farklı mesajlar
+    let errorMessage = 'Dosya yükleme sırasında bir hata oluştu.';
+
+    if (error.message.includes('Google Drive konfigürasyonu')) {
+      errorMessage =
+        'Google Drive bağlantısı kurulamadı. Lütfen sistem yöneticisine başvurun.';
+    } else if (error.message.includes('Klasör oluşturulamadı')) {
+      errorMessage = 'Klasör oluşturulamadı. Lütfen tekrar deneyin.';
+    } else if (error.message.includes('Dosya yüklenemedi')) {
+      errorMessage =
+        'Dosyalar yüklenemedi. Dosya boyutunu kontrol edip tekrar deneyin.';
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: errorMessage,
+      error:
+        process.env['NODE_ENV'] === 'development' ? error.message : undefined,
+    });
   }
 }
 
-async function createFolder(
-  drive: any,
-  name: string,
-  parentId?: string
-): Promise<string> {
-  const res = await drive.files.create({
-    requestBody: {
-      name,
-      mimeType: 'application/vnd.google-apps.folder',
-      parents: parentId ? [parentId] : undefined,
-    },
-    fields: 'id',
-  });
-  const id = res.data.id as string;
-  await ensureAnyoneReader(drive, id);
-  return id;
-}
-
-async function findFolderByName(
-  drive: any,
-  name: string,
-  parentId?: string
-): Promise<string | null> {
-  const safeName = name.replace(/'/g, "\\'");
-  const qParts = [
-    `mimeType='application/vnd.google-apps.folder'`,
-    `name='${safeName}'`,
-    `trashed=false`,
-  ];
-  if (parentId) qParts.push(`'${parentId}' in parents`);
-  const q = qParts.join(' and ');
-
-  const res = await drive.files.list({
-    q,
-    pageSize: 1,
-    fields: 'files(id,name)',
-  });
-  return res.data.files?.[0]?.id || null;
-}
-
-export function createGoogleDriveService() {
-  const auth = getAuth();
-  const drive = getDrive(auth);
-  const ROOT_FOLDER_ID = process.env['GOOGLE_DRIVE_FOLDER_ID']!; // ana klasör
-
-  return {
-    /** İsim-soyisim klasörünü bulur, yoksa oluşturur */
-    async createOrFindGuestFolder(firstName: string, lastName: string) {
-      const safe = `${firstName.trim()}_${lastName.trim()}`.replace(
-        /\s+/g,
-        '_'
-      );
-      const exist = await findFolderByName(drive, safe, ROOT_FOLDER_ID);
-      if (exist) return exist;
-      return await createFolder(drive, safe, ROOT_FOLDER_ID);
-    },
-
-    /** Klasör linki döndürür */
-    async getFolderLink(folderId: string) {
-      return `https://drive.google.com/drive/folders/${folderId}`;
-    },
-
-    /** Buffer ile dosya yükler (foto/video dahil) */
-    async uploadFiles(
-      files: {
-        buffer: Buffer;
-        originalname: string;
-        mimetype: string;
-        size: number;
-      }[],
-      parentFolderId: string
-    ) {
-      const results: Array<{
-        id: string;
-        name: string;
-        size: number;
-        mimeType: string;
-        webViewLink: string;
-      }> = [];
-
-      for (const f of files) {
-        const body = new PassThrough();
-        body.end(f.buffer);
-
-        const res = await drive.files.create({
-          requestBody: {
-            name: `${Date.now()}_${f.originalname}`,
-            parents: [parentFolderId],
-          },
-          media: { mimeType: f.mimetype, body },
-          fields: 'id,name,size,mimeType,webViewLink',
-        });
-
-        const id = res.data.id as string;
-        await ensureAnyoneReader(drive, id);
-
-        results.push({
-          id,
-          name: res.data.name as string,
-          size: Number(res.data.size ?? f.size),
-          mimeType: res.data.mimeType ?? f.mimetype,
-          webViewLink: res.data.webViewLink as string,
-        });
-      }
-
-      return results;
-    },
-  };
-}
+// Vercel runtime için config
+export const config = {
+  api: {
+    bodyParser: false, // busboy kullanacağımız için disable et
+  },
+};

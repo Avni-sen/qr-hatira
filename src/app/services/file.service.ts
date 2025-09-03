@@ -25,19 +25,27 @@ export interface ApiResponse<T> {
 }
 
 export interface UploadResponse {
-  guestId: number;
+  uploadDate: string;
   guest: {
     firstName: string;
     lastName: string;
-    fileCount: number;
   };
-  uploadedFiles: Array<{
-    id: number;
-    originalName: string;
-    fileName: string;
-    fileSize: number;
+  folder: {
+    id: string;
+    name: string;
+    webViewLink: string;
+  };
+  uploadedFiles: {
+    id: string;
+    name: string;
+    size: number;
     mimeType: string;
-  }>;
+    webViewLink: string;
+  }[];
+  folderStats: {
+    totalFiles: number;
+    totalSize: number;
+  };
 }
 
 @Injectable({
@@ -50,42 +58,50 @@ export class FileService {
   constructor(private http: HttpClient) {}
 
   private getApiUrl(): string {
+    // Production'da Vercel API'sini kullan
+    if (typeof window !== 'undefined') {
+      const isLocalhost = window.location.hostname === 'localhost';
+      return isLocalhost ? 'http://localhost:3000/api' : '/api';
+    }
     return '/api';
   }
 
-  // Backend'e dosya yükleme
+  // Google Drive'a dosya yükleme (gerçek versiyon)
   uploadFiles(
     firstName: string,
     lastName: string,
     files: File[],
     qrCode?: string
   ): Observable<ApiResponse<UploadResponse>> {
+    console.log(
+      `📤 ${firstName} ${lastName} - ${files.length} dosya Google Drive'a yükleniyor...`
+    );
+
+    // FormData oluştur - gerçek dosyalar ile
     const formData = new FormData();
     formData.append('firstName', firstName);
     formData.append('lastName', lastName);
+
     if (qrCode) {
       formData.append('qrCode', qrCode);
     }
 
-    // Dosyaları form data'ya ekle
-    files.forEach((file) => {
-      formData.append('files', file);
+    // Her dosyayı FormData'ya ekle
+    files.forEach((file, index) => {
+      formData.append('files', file, file.name);
+      console.log(
+        `📁 Dosya ${index + 1}: ${file.name} (${this.formatFileSize(
+          file.size
+        )})`
+      );
     });
 
+    // Multipart form data olarak gönder
     return this.http.post<ApiResponse<UploadResponse>>(
-      `https://qrhatira.vercel.app/api/upload`,
+      `${this.API_URL}/upload`,
       formData
+      // Content-Type header'ını manuel olarak set etme - browser otomatik ekleyecek
     );
-  }
-
-  // Backend'den yüklemeleri getir
-  getUploadsFromBackend(): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.API_URL}/uploads`);
-  }
-
-  // Backend'den istatistikleri getir
-  getStatsFromBackend(): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.API_URL}/stats`);
   }
 
   // Health check
@@ -93,55 +109,49 @@ export class FileService {
     return this.http.get(`${this.API_URL}/health`);
   }
 
-  // Yükleme verilerini localStorage'a kaydet (fallback)
-  saveUploadData(data: FileUploadData): void {
-    const existingUploads = this.getAllUploads();
-    existingUploads.push(data);
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(existingUploads));
+  // Local storage fallback methods
+  saveUploadToStorage(uploadData: FileUploadData): void {
+    try {
+      const existingUploads = this.getUploadsFromStorage();
+      existingUploads.push(uploadData);
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(existingUploads));
+      console.log('✅ Upload saved to local storage');
+    } catch (error) {
+      console.error('❌ Error saving to local storage:', error);
+    }
   }
 
-  // Tüm yüklemeleri getir
-  getAllUploads(): FileUploadData[] {
-    const data = localStorage.getItem(this.STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+  getUploadsFromStorage(): FileUploadData[] {
+    try {
+      const uploads = localStorage.getItem(this.STORAGE_KEY);
+      return uploads ? JSON.parse(uploads) : [];
+    } catch (error) {
+      console.error('❌ Error reading from local storage:', error);
+      return [];
+    }
   }
 
-  // İstatistikleri getir
-  getUploadStats() {
-    const uploads = this.getAllUploads();
-    return {
-      totalUploads: uploads.length,
-      totalFiles: uploads.reduce((sum, upload) => sum + upload.fileCount, 0),
-      totalGuests: uploads.filter(
-        (upload) => upload.guest.firstName || upload.guest.lastName
-      ).length,
-      recentUploads: uploads.slice(-5).reverse(),
-    };
-  }
-
-  // Verileri temizle
-  clearAllData(): void {
+  clearStorage(): void {
     localStorage.removeItem(this.STORAGE_KEY);
   }
 
+  getStatsFromStorage(): { totalGuests: number; totalFiles: number } {
+    const uploads = this.getUploadsFromStorage();
+    return {
+      totalGuests: uploads.length,
+      totalFiles: uploads.reduce(
+        (total, upload) => total + upload.fileCount,
+        0
+      ),
+    };
+  }
+
   // Dosya boyutunu formatla
-  formatFileSize(bytes: number): string {
+  private formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  // Tarih formatla
-  formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   }
 }

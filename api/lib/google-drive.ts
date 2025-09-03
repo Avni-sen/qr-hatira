@@ -3,24 +3,32 @@ import { google } from 'googleapis';
 export interface GoogleDriveConfig {
   clientEmail: string;
   privateKey: string;
-  parentFolderId?: string; // Ana wedding klasörü ID'si
+  parentFolderId?: string;
 }
 
-export interface UploadedFile {
+export interface UploadedFileInfo {
+  id: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  webViewLink: string;
+  webContentLink: string;
+  createdTime: string;
+}
+
+export interface FolderInfo {
   id: string;
   name: string;
   webViewLink: string;
-  webContentLink: string;
-  size: string;
-  mimeType: string;
+  createdTime: string;
 }
 
 export class GoogleDriveService {
   private drive: any;
-  private parentFolderId: string;
+  private parentFolderId?: string;
 
   constructor(config: GoogleDriveConfig) {
-    // JWT auth ile Google Drive API'sine bağlan
+    // JWT authentication ile Google Drive API'sine bağlan
     const auth = new google.auth.JWT(
       config.clientEmail,
       undefined,
@@ -29,169 +37,213 @@ export class GoogleDriveService {
     );
 
     this.drive = google.drive({ version: 'v3', auth });
-    this.parentFolderId = config.parentFolderId || '';
+    this.parentFolderId = config.parentFolderId;
   }
 
   /**
-   * İsim-soyisim bazlı klasör oluştur veya bul
+   * Misafir için klasör oluştur veya mevcut olanı bul
    */
   async createOrFindGuestFolder(
     firstName: string,
-    lastName: string
-  ): Promise<string> {
-    // Klasör adını oluştur
-    const folderName = this.generateFolderName(firstName, lastName);
+    lastName?: string
+  ): Promise<FolderInfo> {
+    const folderName = lastName
+      ? `${firstName} ${lastName}`
+      : firstName || `Misafir_${Date.now()}`;
 
     try {
-      // Önce böyle bir klasör var mı kontrol et
+      // Önce mevcut klasörü ara
       const existingFolder = await this.findFolder(folderName);
       if (existingFolder) {
-        console.log(`📁 Mevcut klasör bulundu: ${folderName}`);
-        return existingFolder.id;
+        console.log(`✅ Mevcut klasör bulundu: ${folderName}`);
+        return existingFolder;
       }
 
       // Yoksa yeni klasör oluştur
+      console.log(`📁 Yeni klasör oluşturuluyor: ${folderName}`);
+
       const folderMetadata = {
         name: folderName,
         mimeType: 'application/vnd.google-apps.folder',
         parents: this.parentFolderId ? [this.parentFolderId] : undefined,
       };
 
-      const folder = await this.drive.files.create({
-        resource: folderMetadata,
-        fields: 'id',
+      const response = await this.drive.files.create({
+        requestBody: folderMetadata,
+        fields: 'id, name, webViewLink, createdTime',
       });
 
-      console.log(
-        `📁 Yeni klasör oluşturuldu: ${folderName} (ID: ${folder.data.id})`
-      );
-      return folder.data.id;
-    } catch (error) {
-      console.error('❌ Klasör oluşturma hatası:', error);
-      throw new Error(`Klasör oluşturulamadı: ${error}`);
-    }
-  }
+      const folder = response.data;
+      console.log(`✅ Klasör oluşturuldu: ${folder.name} (ID: ${folder.id})`);
 
-  /**
-   * Klasör adı oluştur
-   */
-  private generateFolderName(firstName: string, lastName: string): string {
-    // İsim ve soyisim varsa kullan
-    if (firstName && lastName) {
-      return `${firstName} ${lastName}`;
-    } else if (firstName) {
-      return firstName;
-    } else if (lastName) {
-      return lastName;
-    } else {
-      // İsim yoksa rastgele kod oluştur
-      const randomCode = Math.random()
-        .toString(36)
-        .substring(2, 8)
-        .toUpperCase();
-      return `Misafir_${randomCode}`;
+      return {
+        id: folder.id,
+        name: folder.name,
+        webViewLink: folder.webViewLink,
+        createdTime: folder.createdTime,
+      };
+    } catch (error: any) {
+      console.error('❌ Klasör oluşturma hatası:', error);
+      throw new Error(`Klasör oluşturulamadı: ${error.message}`);
     }
   }
 
   /**
    * Klasör ara
    */
-  private async findFolder(folderName: string): Promise<any> {
+  private async findFolder(folderName: string): Promise<FolderInfo | null> {
     try {
-      const query = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-      const parentQuery = this.parentFolderId
-        ? ` and '${this.parentFolderId}' in parents`
-        : '';
+      const query = this.parentFolderId
+        ? `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and '${this.parentFolderId}' in parents and trashed=false`
+        : `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
 
       const response = await this.drive.files.list({
-        q: query + parentQuery,
-        fields: 'files(id, name)',
+        q: query,
+        fields: 'files(id, name, webViewLink, createdTime)',
       });
 
-      return response.data.files && response.data.files.length > 0
-        ? response.data.files[0]
-        : null;
-    } catch (error) {
+      const folders = response.data.files;
+      if (folders && folders.length > 0) {
+        return {
+          id: folders[0].id,
+          name: folders[0].name,
+          webViewLink: folders[0].webViewLink,
+          createdTime: folders[0].createdTime,
+        };
+      }
+
+      return null;
+    } catch (error: any) {
       console.error('❌ Klasör arama hatası:', error);
       return null;
     }
   }
 
   /**
-   * Dosyaları Google Drive'a yükle
+   * Dosya yükle
    */
-  async uploadFiles(
-    files: Array<{
-      buffer: Buffer;
-      originalname: string;
-      mimetype: string;
-      size: number;
-    }>,
+  async uploadFile(
+    fileBuffer: Buffer,
+    fileName: string,
+    mimeType: string,
     folderId: string
-  ): Promise<UploadedFile[]> {
-    const uploadedFiles: UploadedFile[] = [];
+  ): Promise<UploadedFileInfo> {
+    try {
+      console.log(
+        `📤 Dosya yükleniyor: ${fileName} (${this.formatFileSize(
+          fileBuffer.length
+        )})`
+      );
 
-    for (const file of files) {
-      try {
-        const fileName = `${Date.now()}_${file.originalname}`;
+      const fileMetadata = {
+        name: fileName,
+        parents: [folderId],
+      };
 
-        const fileMetadata = {
-          name: fileName,
-          parents: [folderId],
-        };
+      const media = {
+        mimeType: mimeType,
+        body: fileBuffer,
+      };
 
-        const media = {
-          mimeType: file.mimetype,
-          body: Buffer.from(file.buffer),
-        };
+      const response = await this.drive.files.create({
+        requestBody: fileMetadata,
+        media: media,
+        fields:
+          'id, name, size, mimeType, webViewLink, webContentLink, createdTime',
+      });
 
-        const uploadedFile = await this.drive.files.create({
-          resource: fileMetadata,
-          media: media,
-          fields: 'id, name, size, mimeType, webViewLink, webContentLink',
-        });
+      const file = response.data;
+      console.log(`✅ Dosya yüklendi: ${file.name} (ID: ${file.id})`);
 
-        // Dosyayı herkese açık yap (isteğe bağlı)
-        await this.drive.permissions.create({
-          fileId: uploadedFile.data.id,
-          resource: {
-            role: 'reader',
-            type: 'anyone',
-          },
-        });
-
-        uploadedFiles.push({
-          id: uploadedFile.data.id,
-          name: uploadedFile.data.name,
-          webViewLink: uploadedFile.data.webViewLink,
-          webContentLink: uploadedFile.data.webContentLink,
-          size: uploadedFile.data.size,
-          mimeType: uploadedFile.data.mimeType,
-        });
-
-        console.log(`📤 Dosya yüklendi: ${file.originalname} -> ${fileName}`);
-      } catch (error) {
-        console.error(`❌ Dosya yükleme hatası (${file.originalname}):`, error);
-        throw new Error(`Dosya yüklenemedi: ${file.originalname}`);
-      }
+      return {
+        id: file.id,
+        name: file.name,
+        size: parseInt(file.size || '0'),
+        mimeType: file.mimeType,
+        webViewLink: file.webViewLink,
+        webContentLink: file.webContentLink,
+        createdTime: file.createdTime,
+      };
+    } catch (error: any) {
+      console.error(`❌ Dosya yükleme hatası (${fileName}):`, error);
+      throw new Error(`Dosya yüklenemedi: ${error.message}`);
     }
-
-    return uploadedFiles;
   }
 
   /**
-   * Klasör linkini al
+   * Birden fazla dosya yükle
    */
-  async getFolderLink(folderId: string): Promise<string> {
+  async uploadMultipleFiles(
+    files: { buffer: Buffer; fileName: string; mimeType: string }[],
+    folderId: string
+  ): Promise<UploadedFileInfo[]> {
+    const uploadPromises = files.map((file) =>
+      this.uploadFile(file.buffer, file.fileName, file.mimeType, folderId)
+    );
+
     try {
-      const folder = await this.drive.files.get({
+      const results = await Promise.all(uploadPromises);
+      console.log(`✅ ${results.length} dosya başarıyla yüklendi`);
+      return results;
+    } catch (error: any) {
+      console.error('❌ Toplu dosya yükleme hatası:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Klasördeki dosyaları listele
+   */
+  async listFilesInFolder(folderId: string): Promise<UploadedFileInfo[]> {
+    try {
+      const response = await this.drive.files.list({
+        q: `'${folderId}' in parents and trashed=false`,
+        fields:
+          'files(id, name, size, mimeType, webViewLink, webContentLink, createdTime)',
+        orderBy: 'createdTime desc',
+      });
+
+      const files = response.data.files || [];
+      return files.map((file: any) => ({
+        id: file.id,
+        name: file.name,
+        size: parseInt(file.size || '0'),
+        mimeType: file.mimeType,
+        webViewLink: file.webViewLink,
+        webContentLink: file.webContentLink,
+        createdTime: file.createdTime,
+      }));
+    } catch (error: any) {
+      console.error('❌ Dosya listeleme hatası:', error);
+      throw new Error(`Dosyalar listelenemedi: ${error.message}`);
+    }
+  }
+
+  /**
+   * Dosya boyutunu formatla
+   */
+  private formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Klasörün paylaşım linkini al
+   */
+  async getFolderShareLink(folderId: string): Promise<string> {
+    try {
+      const response = await this.drive.files.get({
         fileId: folderId,
         fields: 'webViewLink',
       });
-      return folder.data.webViewLink;
-    } catch (error) {
-      console.error('❌ Klasör link alma hatası:', error);
-      return '';
+
+      return response.data.webViewLink;
+    } catch (error: any) {
+      console.error('❌ Paylaşım linki alma hatası:', error);
+      throw new Error(`Paylaşım linki alınamadı: ${error.message}`);
     }
   }
 
@@ -202,19 +254,12 @@ export class GoogleDriveService {
     folderId: string
   ): Promise<{ fileCount: number; totalSize: number }> {
     try {
-      const response = await this.drive.files.list({
-        q: `'${folderId}' in parents and trashed=false`,
-        fields: 'files(size)',
-      });
-
-      const files = response.data.files || [];
+      const files = await this.listFilesInFolder(folderId);
       const fileCount = files.length;
-      const totalSize = files.reduce((sum: number, file: any) => {
-        return sum + (parseInt(file.size) || 0);
-      }, 0);
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
 
       return { fileCount, totalSize };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Klasör istatistik hatası:', error);
       return { fileCount: 0, totalSize: 0 };
     }
@@ -222,16 +267,16 @@ export class GoogleDriveService {
 }
 
 /**
- * Environment variables'dan Google Drive servisini başlat
+ * Google Drive service instance oluştur
  */
 export function createGoogleDriveService(): GoogleDriveService {
-  const clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL;
-  const privateKey = process.env.GOOGLE_DRIVE_PRIVATE_KEY;
-  const parentFolderId = process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID;
+  const clientEmail = process.env['GOOGLE_DRIVE_CLIENT_EMAIL'];
+  const privateKey = process.env['GOOGLE_DRIVE_PRIVATE_KEY'];
+  const parentFolderId = process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID'];
 
   if (!clientEmail || !privateKey) {
     throw new Error(
-      'Google Drive credentials bulunamadı. Environment variables kontrol edin.'
+      'Google Drive konfigürasyonu eksik. GOOGLE_DRIVE_CLIENT_EMAIL ve GOOGLE_DRIVE_PRIVATE_KEY environment variables gerekli.'
     );
   }
 

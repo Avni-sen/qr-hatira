@@ -146,9 +146,40 @@
   <!-- Success Message -->
   <div
     *ngIf="successMessage"
-    class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg"
+    class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg"
   >
-    {{ successMessage }}
+    <div class="flex items-center mb-2">
+      <span class="text-lg mr-2">✅</span>
+      <span class="font-semibold">{{ successMessage }}</span>
+    </div>
+
+    <!-- Google Drive Link -->
+    <div *ngIf="folderLink" class="mt-3 p-3 bg-green-50 rounded border">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <span class="text-sm mr-2">📁</span>
+          <span class="text-sm font-medium"
+            >Klasörünüz Google Drive'da hazır!</span
+          >
+        </div>
+        <span
+          *ngIf="uploadedFileCount > 0"
+          class="text-xs bg-green-200 px-2 py-1 rounded"
+        >
+          {{ uploadedFileCount }} dosya
+        </span>
+      </div>
+      <a
+        [href]="folderLink"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+      >
+        <span class="mr-1">🔗</span>
+        Klasörü Google Drive'da Aç
+        <span class="ml-1">↗</span>
+      </a>
+    </div>
   </div>
 
   <!-- Upload Button -->

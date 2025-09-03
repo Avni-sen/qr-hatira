@@ -96,8 +96,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('📤 Google Drive upload isteği alındı');
     console.log('Content-Type:', req.headers['content-type']);
 
+    // Environment variables kontrolü
+    console.log('🔧 Environment variables kontrol ediliyor...');
+    console.log(
+      'CLIENT_EMAIL var:',
+      !!process.env['GOOGLE_DRIVE_CLIENT_EMAIL']
+    );
+    console.log('PRIVATE_KEY var:', !!process.env['GOOGLE_DRIVE_PRIVATE_KEY']);
+    console.log(
+      'PARENT_FOLDER_ID var:',
+      !!process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID']
+    );
+
     // Google Drive service'i oluştur
+    console.log('🔧 Google Drive service oluşturuluyor...');
     const driveService = createGoogleDriveService();
+    console.log('✅ Google Drive service oluşturuldu');
 
     let formData: FormData;
 

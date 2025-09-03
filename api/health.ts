@@ -21,10 +21,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    console.log('🔧 Health check başlıyor...');
+
+    // Environment variables debug
+    console.log('Environment variables:');
+    console.log(
+      '- CLIENT_EMAIL:',
+      process.env['GOOGLE_DRIVE_CLIENT_EMAIL'] ? 'SET' : 'NOT SET'
+    );
+    console.log(
+      '- PRIVATE_KEY:',
+      process.env['GOOGLE_DRIVE_PRIVATE_KEY'] ? 'SET' : 'NOT SET'
+    );
+    console.log(
+      '- PARENT_FOLDER_ID:',
+      process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID'] ? 'SET' : 'NOT SET'
+    );
+
     // Google Drive konfigürasyon kontrolü
     const googleDriveConfigured = !!(
-      process.env.GOOGLE_DRIVE_CLIENT_EMAIL &&
-      process.env.GOOGLE_DRIVE_PRIVATE_KEY
+      process.env['GOOGLE_DRIVE_CLIENT_EMAIL'] &&
+      process.env['GOOGLE_DRIVE_PRIVATE_KEY']
     );
 
     const health = {
@@ -40,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       configuration: {
         googleDriveEnabled: googleDriveConfigured,
-        parentFolderSet: !!process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID,
+        parentFolderSet: !!process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID'],
       },
     };
 

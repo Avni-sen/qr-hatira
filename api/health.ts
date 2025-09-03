@@ -70,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: 'OK',
       timestamp: new Date().toISOString(),
       service: 'Wedding Photo Share API - Google Drive Edition',
-      environment: process.env.NODE_ENV || 'production',
+      environment: process.env['NODE_ENV'] || 'production',
       message: 'API çalışıyor! 🎉',
       services: {
         api: 'healthy',

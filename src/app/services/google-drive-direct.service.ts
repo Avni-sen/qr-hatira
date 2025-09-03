@@ -24,7 +24,9 @@ export class GoogleDriveDirectService {
   // Backend'den access token al
   private async getAccessToken(): Promise<string> {
     try {
-      const response = await this.http.get<{success: boolean, accessToken: string}>('/api/get-token').toPromise();
+      const response = await this.http
+        .get<{ success: boolean; accessToken: string }>('/api/get-token')
+        .toPromise();
       if (response?.success && response.accessToken) {
         return response.accessToken;
       }
@@ -75,10 +77,10 @@ export class GoogleDriveDirectService {
   }
 
   // Doğrudan Google Drive API'sine dosya yükle (tek dosya)
-  uploadFileToDrive(
+  async uploadFileToDrive(
     file: File,
     fileName?: string
-  ): Observable<DriveUploadResponse> {
+  ): Promise<Observable<DriveUploadResponse>> {
     const accessToken = await this.getAccessToken();
 
     return this.uploadFileDirectly(file, this.PARENT_FOLDER_ID, accessToken);

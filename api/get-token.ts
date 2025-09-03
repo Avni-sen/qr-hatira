@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const accessToken = process.env['GOOGLE_ACCESS_TOKEN'];
-    
+
     if (!accessToken) {
       return res.status(500).json({
         success: false,
@@ -34,7 +34,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       accessToken: accessToken,
     });
-
   } catch (error: any) {
     console.error('❌ Token alma hatası:', error);
     return res.status(500).json({

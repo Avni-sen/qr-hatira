@@ -183,6 +183,8 @@ export class GoogleDriveService {
 
     try {
       const results = await Promise.all(uploadPromises);
+      console.log(results);
+
       console.log(`✅ ${results.length} dosya başarıyla yüklendi`);
       return results;
     } catch (error: any) {

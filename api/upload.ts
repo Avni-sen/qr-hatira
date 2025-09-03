@@ -149,6 +149,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         mimeType: file.mimeType,
       }));
 
+      console.log('filesToUpload', filesToUpload);
+
       uploadResults = await driveService.uploadMultipleFiles(
         filesToUpload,
         guestFolder.id

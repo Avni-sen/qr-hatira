@@ -25,6 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Environment variables debug
     console.log('Environment variables:');
+    console.log('Google Drive API:');
     console.log(
       '- CLIENT_EMAIL:',
       process.env['GOOGLE_DRIVE_CLIENT_EMAIL'] ? 'SET' : 'NOT SET'
@@ -36,6 +37,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(
       '- PARENT_FOLDER_ID:',
       process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID'] ? 'SET' : 'NOT SET'
+    );
+    console.log('Google OAuth:');
+    console.log(
+      '- CLIENT_ID:',
+      process.env['GOOGLE_CLIENT_ID'] ? 'SET' : 'NOT SET'
+    );
+    console.log(
+      '- CLIENT_SECRET:',
+      process.env['GOOGLE_CLIENT_SECRET'] ? 'SET' : 'NOT SET'
+    );
+    console.log(
+      '- PROJECT_ID:',
+      process.env['GOOGLE_PROJECT_ID'] ? 'SET' : 'NOT SET'
+    );
+    console.log(
+      '- REFRESH_TOKEN:',
+      process.env['GOOGLE_REFRESH_TOKEN'] ? 'SET' : 'NOT SET'
+    );
+    console.log(
+      '- ACCESS_TOKEN:',
+      process.env['GOOGLE_ACCESS_TOKEN'] ? 'SET' : 'NOT SET'
     );
 
     // Google Drive konfigürasyon kontrolü
@@ -58,6 +80,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       configuration: {
         googleDriveEnabled: googleDriveConfigured,
         parentFolderSet: !!process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID'],
+        googleOAuthConfigured: !!(
+          process.env['GOOGLE_CLIENT_ID'] &&
+          process.env['GOOGLE_CLIENT_SECRET'] &&
+          process.env['GOOGLE_PROJECT_ID']
+        ),
+        googleTokensConfigured: !!(
+          process.env['GOOGLE_REFRESH_TOKEN'] &&
+          process.env['GOOGLE_ACCESS_TOKEN']
+        ),
       },
     };
 

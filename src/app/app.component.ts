@@ -29,8 +29,6 @@ export class AppComponent {
   }
 
   onFilesUploaded(guestInfo: GuestInfo) {
-    console.log('Dosyalar yüklendi:', guestInfo);
-
     // Başarı ekranına geç
     this.showPhotoUpload = false;
     this.showSuccess = true;
@@ -61,8 +59,6 @@ export class AppComponent {
     );
     existingUploads.push(uploadInfo);
     localStorage.setItem('weddingUploads', JSON.stringify(existingUploads));
-
-    console.log('Yükleme bilgileri kaydedildi:', uploadInfo);
   }
 
   resetApp() {

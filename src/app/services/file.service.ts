@@ -73,10 +73,6 @@ export class FileService {
     files: File[],
     qrCode?: string
   ): Observable<ApiResponse<UploadResponse>> {
-    console.log(
-      `📤 ${firstName} ${lastName} - ${files.length} dosya Google Drive'a yükleniyor...`
-    );
-
     // FormData oluştur - gerçek dosyalar ile
     const formData = new FormData();
     formData.append('firstName', firstName);
@@ -89,11 +85,6 @@ export class FileService {
     // Her dosyayı FormData'ya ekle
     files.forEach((file, index) => {
       formData.append('files', file, file.name);
-      console.log(
-        `📁 Dosya ${index + 1}: ${file.name} (${this.formatFileSize(
-          file.size
-        )})`
-      );
     });
 
     // Multipart form data olarak gönder
@@ -115,7 +106,6 @@ export class FileService {
       const existingUploads = this.getUploadsFromStorage();
       existingUploads.push(uploadData);
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(existingUploads));
-      console.log('✅ Upload saved to local storage');
     } catch (error) {
       console.error('❌ Error saving to local storage:', error);
     }

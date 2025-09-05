@@ -55,12 +55,10 @@ export class GoogleDriveService {
       // Önce mevcut klasörü ara
       const existingFolder = await this.findFolder(folderName);
       if (existingFolder) {
-        console.log(`✅ Mevcut klasör bulundu: ${folderName}`);
         return existingFolder;
       }
 
       // Yoksa yeni klasör oluştur
-      console.log(`📁 Yeni klasör oluşturuluyor: ${folderName}`);
 
       const folderMetadata = {
         name: folderName,
@@ -74,7 +72,6 @@ export class GoogleDriveService {
       });
 
       const folder = response.data;
-      console.log(`✅ Klasör oluşturuldu: ${folder.name} (ID: ${folder.id})`);
 
       return {
         id: folder.id,
@@ -129,12 +126,6 @@ export class GoogleDriveService {
     folderId: string
   ): Promise<UploadedFileInfo> {
     try {
-      console.log(
-        `📤 Dosya yükleniyor: ${fileName} (${this.formatFileSize(
-          fileBuffer.length
-        )})`
-      );
-
       const fileMetadata = {
         name: fileName,
         parents: [folderId],
@@ -153,7 +144,6 @@ export class GoogleDriveService {
       });
 
       const file = response.data;
-      console.log(`✅ Dosya yüklendi: ${file.name} (ID: ${file.id})`);
 
       return {
         id: file.id,
@@ -183,9 +173,6 @@ export class GoogleDriveService {
 
     try {
       const results = await Promise.all(uploadPromises);
-      console.log(results);
-
-      console.log(`✅ ${results.length} dosya başarıyla yüklendi`);
       return results;
     } catch (error: any) {
       console.error('❌ Toplu dosya yükleme hatası:', error);

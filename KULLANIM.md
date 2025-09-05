@@ -150,10 +150,6 @@ src/app/
 
 Console'da yükleme verilerini görmek için:
 
-```javascript
-console.log(JSON.parse(localStorage.getItem("weddingUploads")));
-```
-
 ## 📄 Lisans
 
 Bu proje kişisel kullanım için oluşturulmuştur.

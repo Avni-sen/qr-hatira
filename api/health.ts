@@ -21,45 +21,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    console.log('🔧 Health check başlıyor...');
-
-    // Environment variables debug
-    console.log('Environment variables:');
-    console.log('Google Drive API:');
-    console.log(
-      '- CLIENT_EMAIL:',
-      process.env['GOOGLE_DRIVE_CLIENT_EMAIL'] ? 'SET' : 'NOT SET'
-    );
-    console.log(
-      '- PRIVATE_KEY:',
-      process.env['GOOGLE_DRIVE_PRIVATE_KEY'] ? 'SET' : 'NOT SET'
-    );
-    console.log(
-      '- PARENT_FOLDER_ID:',
-      process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID'] ? 'SET' : 'NOT SET'
-    );
-    console.log('Google OAuth:');
-    console.log(
-      '- CLIENT_ID:',
-      process.env['GOOGLE_CLIENT_ID'] ? 'SET' : 'NOT SET'
-    );
-    console.log(
-      '- CLIENT_SECRET:',
-      process.env['GOOGLE_CLIENT_SECRET'] ? 'SET' : 'NOT SET'
-    );
-    console.log(
-      '- PROJECT_ID:',
-      process.env['GOOGLE_PROJECT_ID'] ? 'SET' : 'NOT SET'
-    );
-    console.log(
-      '- REFRESH_TOKEN:',
-      process.env['GOOGLE_REFRESH_TOKEN'] ? 'SET' : 'NOT SET'
-    );
-    console.log(
-      '- ACCESS_TOKEN:',
-      process.env['GOOGLE_ACCESS_TOKEN'] ? 'SET' : 'NOT SET'
-    );
-
     // Google Drive konfigürasyon kontrolü
     const googleDriveConfigured = !!(
       process.env['GOOGLE_DRIVE_CLIENT_EMAIL'] &&
@@ -70,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: 'OK',
       timestamp: new Date().toISOString(),
       service: 'Wedding Photo Share API - Google Drive Edition',
-      environment: process.env.NODE_ENV || 'production',
+      environment: process.env['NODE_ENV'] || 'production',
       message: 'API çalışıyor! 🎉',
       services: {
         api: 'healthy',
@@ -93,11 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     if (!googleDriveConfigured) {
-      console.log(
-        '⚠️ Google Drive not configured - missing environment variables'
-      );
-    } else {
-      console.log('✅ Health check başarılı - Google Drive configured');
+      // Google Drive not configured
     }
 
     return res.status(200).json(health);

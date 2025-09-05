@@ -93,43 +93,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    console.log('📤 Google Drive upload isteği alındı');
-    console.log('Content-Type:', req.headers['content-type']);
-
     // Environment variables kontrolü
-    console.log('🔧 Environment variables kontrol ediliyor...');
-    console.log(
-      'CLIENT_EMAIL var:',
-      !!process.env['GOOGLE_DRIVE_CLIENT_EMAIL']
-    );
-    console.log('PRIVATE_KEY var:', !!process.env['GOOGLE_DRIVE_PRIVATE_KEY']);
-    console.log(
-      'PARENT_FOLDER_ID var:',
-      !!process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID']
-    );
 
     // Google Drive service'i oluştur
-    console.log('🔧 Google Drive service oluşturuluyor...');
     const driveService = createGoogleDriveService();
-    console.log('✅ Google Drive service oluşturuldu');
 
     let formData: FormData;
 
     // Content-Type'a göre veri parse et
     if (req.headers['content-type']?.includes('multipart/form-data')) {
-      console.log('📁 Multipart form data parsing...');
       formData = await parseMultipartData(req);
     } else if (req.headers['content-type']?.includes('application/json')) {
-      console.log('📄 JSON data parsing...');
       formData = parseJsonData(req);
     } else {
       throw new Error(
         'Desteklenmeyen Content-Type. multipart/form-data veya application/json kullanın.'
       );
     }
-
-    console.log(`👤 Misafir: ${formData.firstName} ${formData.lastName}`);
-    console.log(`📁 Dosya sayısı: ${formData.files.length}`);
 
     // Misafir klasörü oluştur veya bul
     const guestFolder = await driveService.createOrFindGuestFolder(
@@ -141,22 +121,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Eğer dosyalar varsa Google Drive'a yükle
     if (formData.files.length > 0) {
-      console.log("📤 Dosyalar Google Drive'a yükleniyor...");
-
       const filesToUpload = formData.files.map((file) => ({
         buffer: file.buffer,
         fileName: file.fileName,
         mimeType: file.mimeType,
       }));
 
-      console.log('filesToUpload', filesToUpload);
-
       uploadResults = await driveService.uploadMultipleFiles(
         filesToUpload,
         guestFolder.id
       );
-
-      console.log(`✅ ${uploadResults.length} dosya başarıyla yüklendi`);
     }
 
     // Klasör istatistiklerini al
@@ -189,7 +163,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     };
 
-    console.log('✅ Upload işlemi tamamlandı');
     return res.status(200).json(response);
   } catch (error: any) {
     console.error('❌ Upload hatası:', error);

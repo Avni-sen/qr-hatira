@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { FileService } from '../../services/file.service';
 import { GoogleDriveDirectService } from '../../services/google-drive-direct.service';
 
@@ -221,7 +222,8 @@ export class PhotoUploadComponent {
       try {
         console.log(`📤 Yükleniyor ${i + 1}/${totalFiles}: ${files[i].name}`);
 
-        await this.driveService.uploadFileToDrive(files[i]).toPromise();
+        const observable = await this.driveService.uploadFileToDrive(files[i]);
+        await firstValueFrom(observable);
         uploadedCount++;
 
         // Progress güncelle

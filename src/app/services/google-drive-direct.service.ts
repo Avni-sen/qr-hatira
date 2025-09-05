@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 
 export interface DriveUploadResponse {
   id: string;
@@ -24,9 +24,11 @@ export class GoogleDriveDirectService {
   // Backend'den access token al
   private async getAccessToken(): Promise<string> {
     try {
-      const response = await this.http
-        .get<{ success: boolean; accessToken: string }>('/api/get-token')
-        .toPromise();
+      const response = await firstValueFrom(
+        this.http.get<{ success: boolean; accessToken: string }>(
+          '/api/get-token'
+        )
+      );
       if (response?.success && response.accessToken) {
         return response.accessToken;
       }
@@ -104,13 +106,13 @@ export class GoogleDriveDirectService {
     });
 
     try {
-      const response = await this.http
-        .post<DriveUploadResponse>(
+      const response = await firstValueFrom(
+        this.http.post<DriveUploadResponse>(
           'https://www.googleapis.com/drive/v3/files',
           metadata,
           { headers }
         )
-        .toPromise();
+      );
 
       return response!;
     } catch (error) {
@@ -143,9 +145,11 @@ export class GoogleDriveDirectService {
     });
 
     try {
-      const response = await this.http
-        .post<DriveUploadResponse>(this.DRIVE_UPLOAD_URL, formData, { headers })
-        .toPromise();
+      const response = await firstValueFrom(
+        this.http.post<DriveUploadResponse>(this.DRIVE_UPLOAD_URL, formData, {
+          headers,
+        })
+      );
 
       return response!;
     } catch (error) {
@@ -201,11 +205,9 @@ export class GoogleDriveDirectService {
     accessToken: string
   ): Observable<DriveUploadResponse[]> {
     const uploadPromises = files.map((file) =>
-      this.uploadFileDirectly(
-        file,
-        this.PARENT_FOLDER_ID,
-        accessToken
-      ).toPromise()
+      firstValueFrom(
+        this.uploadFileDirectly(file, this.PARENT_FOLDER_ID, accessToken)
+      )
     );
 
     return new Observable((observer) => {

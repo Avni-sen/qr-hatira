@@ -1,9 +1,12 @@
 export const environment = {
   production: true,
-  googleClientId:
-    '174847816124-d5aukd19ghd6vmplapjiqiii3dlkjj08.apps.googleusercontent.com',
-  googleDriveParentFolderId: '13Z6EEbZKUBwfRnsoXJvrCQlweJL9phg0', // Ana klasör ID'si buraya gelecek
-  // Token'lar environment variables'dan alınacak
+  googleClientId: process.env['GOOGLE_CLIENT_ID'] || '',
+  googleDriveParentFolderId: process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID'] || '',
   googleAccessToken: process.env['GOOGLE_ACCESS_TOKEN'] || '',
   googleRefreshToken: process.env['GOOGLE_REFRESH_TOKEN'] || '',
+  nodeEnv: process.env['NODE_ENV'] || 'development',
+  googleDriveClientEmail: process.env['GOOGLE_DRIVE_CLIENT_EMAIL'] || '',
+  googleDrivePrivateKey: process.env['GOOGLE_DRIVE_PRIVATE_KEY'] || '',
+  googleProjectId: process.env['GOOGLE_PROJECT_ID'] || '',
+  googleClientSecret: process.env['GOOGLE_CLIENT_SECRET'] || '',
 };

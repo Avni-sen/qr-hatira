@@ -1,4 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { environment } from '../src/environments/environment';
 
 function setCORS(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,15 +24,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Google Drive konfigürasyon kontrolü
     const googleDriveConfigured = !!(
-      process.env['GOOGLE_DRIVE_CLIENT_EMAIL'] &&
-      process.env['GOOGLE_DRIVE_PRIVATE_KEY']
+      environment.googleDriveClientEmail && environment.googleDrivePrivateKey
     );
 
     const health = {
       status: 'OK',
       timestamp: new Date().toISOString(),
       service: 'Wedding Photo Share API - Google Drive Edition',
-      environment: process.env['NODE_ENV'] || 'production',
+      environment: environment.nodeEnv || 'production',
       message: 'API çalışıyor! 🎉',
       services: {
         api: 'healthy',
@@ -40,15 +40,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       configuration: {
         googleDriveEnabled: googleDriveConfigured,
-        parentFolderSet: !!process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID'],
+        parentFolderSet: !!environment.googleDriveParentFolderId,
         googleOAuthConfigured: !!(
-          process.env['GOOGLE_CLIENT_ID'] &&
-          process.env['GOOGLE_CLIENT_SECRET'] &&
-          process.env['GOOGLE_PROJECT_ID']
+          environment.googleClientId &&
+          environment.googleClientSecret &&
+          environment.googleProjectId
         ),
         googleTokensConfigured: !!(
-          process.env['GOOGLE_REFRESH_TOKEN'] &&
-          process.env['GOOGLE_ACCESS_TOKEN']
+          environment.googleRefreshToken && environment.googleAccessToken
         ),
       },
     };

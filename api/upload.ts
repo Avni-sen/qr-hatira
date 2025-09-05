@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createGoogleDriveService } from './lib/google-drive';
 import busboy from 'busboy';
+import { environment } from '../src/environments/environment';
 
 interface UploadedFile {
   buffer: Buffer;
@@ -183,8 +184,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({
       success: false,
       message: errorMessage,
-      error:
-        process.env['NODE_ENV'] === 'development' ? error.message : undefined,
+      error: environment.nodeEnv === 'development' ? error.message : undefined,
     });
   }
 }

@@ -1,4 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { environment } from '../src/environments/environment';
 
 function setCORS(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const accessToken = process.env['GOOGLE_ACCESS_TOKEN'];
+    const accessToken = environment.googleAccessToken;
 
     if (!accessToken) {
       return res.status(500).json({

@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { environment } from '../../src/environments/environment';
 
 export interface GoogleDriveConfig {
   clientEmail: string;
@@ -259,9 +260,9 @@ export class GoogleDriveService {
  * Google Drive service instance oluştur
  */
 export function createGoogleDriveService(): GoogleDriveService {
-  const clientEmail = process.env['GOOGLE_DRIVE_CLIENT_EMAIL'];
-  const privateKey = process.env['GOOGLE_DRIVE_PRIVATE_KEY'];
-  const parentFolderId = process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID'];
+  const clientEmail = environment.googleDriveClientEmail;
+  const privateKey = environment.googleDrivePrivateKey;
+  const parentFolderId = environment.googleDriveParentFolderId;
 
   if (!clientEmail || !privateKey) {
     throw new Error(

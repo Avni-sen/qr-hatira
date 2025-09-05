@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import busboy from 'busboy';
+import { environment } from '../src/environments/environment';
 
 interface UploadedFile {
   buffer: Buffer;
@@ -95,7 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Environment variables kontrolü
-    const accessToken = process.env['GOOGLE_ACCESS_TOKEN'];
+    const accessToken = environment.googleAccessToken;
     if (!accessToken) {
       throw new Error('Google Access Token bulunamadı');
     }
@@ -146,8 +147,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({
       success: false,
       message: errorMessage,
-      error:
-        process.env['NODE_ENV'] === 'development' ? error.message : undefined,
+      error: environment.production === false ? error.message : undefined,
     });
   }
 }

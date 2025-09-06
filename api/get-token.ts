@@ -1,5 +1,4 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { environment } from '../src/environments/environment';
 
 function setCORS(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const accessToken = environment.googleAccessToken;
+    const accessToken = process.env['GOOGLE_ACCESS_TOKEN'];
 
     if (!accessToken) {
       return res.status(500).json({
@@ -36,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       accessToken: accessToken,
     });
   } catch (error: any) {
-    console.error('❌ Token alma hatası:', error);
+    console.error('Token alma hatası:', error);
     return res.status(500).json({
       success: false,
       message: 'Token alınırken bir hata oluştu',

@@ -15,30 +15,20 @@ import { TokenManagerService } from './services/token-manager.service';
 })
 export class AppComponent implements OnInit {
   title = 'wedding-photo-share';
-
-  // Token durumu
   tokenStatus = { isValid: false, expiresIn: 0 };
-
-  // Math property for template
   Math = Math;
-
-  // Uygulama durumu
-  showWelcome = true; // QR kod dışarıdan okunduğu için doğrudan hoş geldin göster
+  showWelcome = true;
   showPhotoUpload = false;
   showSuccess = false;
-
-  // QR kod artık dışarıdan okunuyor
   qrCodeData = '';
 
   constructor(private tokenManager: TokenManagerService) {}
 
   ngOnInit() {
-    // Token durumunu takip et
     this.tokenManager.token$.subscribe(() => {
       this.tokenStatus = this.tokenManager.getTokenStatus();
     });
 
-    // Her 30 saniyede bir token durumunu kontrol et
     setInterval(() => {
       this.tokenStatus = this.tokenManager.getTokenStatus();
     }, 30000);
@@ -50,11 +40,8 @@ export class AppComponent implements OnInit {
   }
 
   onFilesUploaded(guestInfo: GuestInfo) {
-    // Başarı ekranına geç
     this.showPhotoUpload = false;
     this.showSuccess = true;
-
-    // Yüklenen dosya bilgilerini localStorage'a kaydet
     this.saveUploadInfo(guestInfo);
   }
 
@@ -74,7 +61,6 @@ export class AppComponent implements OnInit {
       })),
     };
 
-    // Mevcut yüklemeleri al
     const existingUploads = JSON.parse(
       localStorage.getItem('weddingUploads') || '[]'
     );

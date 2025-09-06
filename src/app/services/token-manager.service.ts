@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface TokenInfo {
@@ -17,20 +17,18 @@ export class TokenManagerService {
   public token$ = this.tokenSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    // Uygulama başladığında mevcut token'ı kontrol et
     this.initializeToken();
   }
 
-  private async initializeToken() {
+  private async initializeToken(): Promise<void> {
     try {
       const response = await firstValueFrom(
         this.http.get<{ success: boolean; accessToken: string }>(
-          '/api/get-token'
+          'https://wedding-photo-share.vercel.app/api/get-token'
         )
       );
 
       if (response?.success && response.accessToken) {
-        // Token'ı 1 saat sonra expire olacak şekilde ayarla
         const expiresAt = Date.now() + 60 * 60 * 1000; // 1 saat
         this.tokenSubject.next({
           accessToken: response.accessToken,
@@ -46,7 +44,6 @@ export class TokenManagerService {
   async getValidToken(): Promise<string> {
     const currentToken = this.tokenSubject.value;
 
-    // Token yoksa veya 5 dakika içinde expire olacaksa yenile
     if (!currentToken || this.isTokenExpiringSoon(currentToken)) {
       await this.refreshToken();
     }
@@ -60,7 +57,6 @@ export class TokenManagerService {
   }
 
   private isTokenExpiringSoon(token: TokenInfo): boolean {
-    // 5 dakika kala yenile
     const fiveMinutes = 5 * 60 * 1000;
     return Date.now() + fiveMinutes >= token.expiresAt;
   }
@@ -73,7 +69,7 @@ export class TokenManagerService {
           accessToken: string;
           expiresIn: number;
           tokenType: string;
-        }>('/api/refresh-token', {})
+        }>('https://wedding-photo-share.vercel.app/api/refresh-token', {})
       );
 
       if (response?.success && response.accessToken) {
@@ -92,12 +88,6 @@ export class TokenManagerService {
     }
   }
 
-  // Manuel token yenileme
-  async forceRefresh(): Promise<void> {
-    await this.refreshToken();
-  }
-
-  // Token durumunu kontrol et
   getTokenStatus(): { isValid: boolean; expiresIn: number } {
     const token = this.tokenSubject.value;
     if (!token) {
@@ -107,7 +97,7 @@ export class TokenManagerService {
     const expiresIn = Math.max(0, token.expiresAt - Date.now());
     return {
       isValid: expiresIn > 0,
-      expiresIn: Math.floor(expiresIn / 1000), // saniye cinsinden
+      expiresIn: Math.floor(expiresIn / 1000),
     };
   }
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { TokenManagerService } from './token-manager.service';
 
 export interface DriveUploadResponse {
   id: string;
@@ -20,11 +21,14 @@ export class GoogleDriveDirectService {
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
   private readonly PARENT_FOLDER_ID = '13Z6EEbZKUBwfRnsoXJvrCQlweJL9phg0'; // Wedding photos folder
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private tokenManager: TokenManagerService
+  ) {}
 
-  // Environment'dan access token al
-  private getAccessToken(): string {
-    return environment.googleAccessToken;
+  // Token manager'dan geçerli access token al
+  private async getAccessToken(): Promise<string> {
+    return await this.tokenManager.getValidToken();
   }
 
   // Kişiye özel klasör oluşturup dosya yükle
@@ -33,7 +37,7 @@ export class GoogleDriveDirectService {
     firstName: string,
     lastName: string
   ): Promise<DriveUploadResponse[]> {
-    const accessToken = this.getAccessToken();
+    const accessToken = await this.getAccessToken();
 
     // 1. Kişiye özel klasör oluştur
     const folderName = `${firstName} ${lastName}`;
@@ -66,7 +70,7 @@ export class GoogleDriveDirectService {
     file: File,
     fileName?: string
   ): Promise<Observable<DriveUploadResponse>> {
-    const accessToken = this.getAccessToken();
+    const accessToken = await this.getAccessToken();
 
     return this.uploadFileDirectly(file, this.PARENT_FOLDER_ID, accessToken);
   }

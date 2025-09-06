@@ -1,5 +1,23 @@
 <div class="min-h-screen">
   <div class="mx-auto">
+    <!-- Token Status Indicator -->
+    <div class="fixed top-4 right-4 z-50">
+      <div
+        class="px-3 py-1 rounded-full text-xs font-medium"
+        [class]="
+          tokenStatus.isValid
+            ? 'bg-green-100 text-green-800'
+            : 'bg-red-100 text-red-800'
+        "
+      >
+        {{
+          tokenStatus.isValid
+            ? "🟢 Token: " + Math.floor(tokenStatus.expiresIn / 60) + "dk"
+            : "🔴 Token: Expired"
+        }}
+      </div>
+    </div>
+
     <!-- Header -->
     <header class="text-center mb-8">
       <!-- Logo and Names Section -->

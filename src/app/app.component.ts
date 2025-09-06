@@ -74,4 +74,13 @@ export class AppComponent implements OnInit {
     this.showSuccess = false;
     this.qrCodeData = '';
   }
+
+  async refreshToken() {
+    try {
+      await this.tokenManager.forceRefresh();
+      console.log('✅ Token manuel olarak yenilendi');
+    } catch (error) {
+      console.error('❌ Token yenileme hatası:', error);
+    }
+  }
 }

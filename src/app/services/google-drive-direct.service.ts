@@ -19,7 +19,7 @@ export interface DriveUploadResponse {
 export class GoogleDriveDirectService {
   private readonly DRIVE_UPLOAD_URL =
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-  private readonly PARENT_FOLDER_ID = '13Z6EEbZKUBwfRnsoXJvrCQlweJL9phg0'; // Wedding photos folder
+  private readonly PARENT_FOLDER_ID = environment.googleDriveParentFolderId;
 
   constructor(
     private http: HttpClient,
@@ -28,7 +28,12 @@ export class GoogleDriveDirectService {
 
   // Token manager'dan geçerli access token al
   private async getAccessToken(): Promise<string> {
-    return await this.tokenManager.getValidToken();
+    try {
+      return await this.tokenManager.getValidToken();
+    } catch (error) {
+      console.error('❌ Token alınamadı:', error);
+      throw new Error('Token alınamadı, lütfen sayfayı yenileyin');
+    }
   }
 
   // Kişiye özel klasör oluşturup dosya yükle

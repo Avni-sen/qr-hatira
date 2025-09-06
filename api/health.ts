@@ -1,5 +1,4 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { environment } from '../src/environments/environment';
 
 function setCORS(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,39 +21,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Google Drive konfigürasyon kontrolü
-    const googleDriveConfigured = !!(
-      environment.googleDriveClientEmail && environment.googleDrivePrivateKey
-    );
-
     const health = {
       status: 'OK',
       timestamp: new Date().toISOString(),
-      service: 'Wedding Photo Share API - Google Drive Edition',
-      environment: environment.nodeEnv || 'production',
+      service: 'Wedding Photo Share API',
       message: 'API çalışıyor! 🎉',
-      services: {
-        api: 'healthy',
-        googleDrive: googleDriveConfigured ? 'configured' : 'not configured',
-        storage: 'google-drive',
-      },
-      configuration: {
-        googleDriveEnabled: googleDriveConfigured,
-        parentFolderSet: !!environment.googleDriveParentFolderId,
-        googleOAuthConfigured: !!(
-          environment.googleClientId &&
-          environment.googleClientSecret &&
-          environment.googleProjectId
-        ),
-        googleTokensConfigured: !!(
-          environment.googleRefreshToken && environment.googleAccessToken
-        ),
+      environment: {
+        hasGoogleClientId: !!process.env['GOOGLE_CLIENT_ID'],
+        hasGoogleClientSecret: !!process.env['GOOGLE_CLIENT_SECRET'],
+        hasGoogleRefreshToken: !!process.env['GOOGLE_REFRESH_TOKEN'],
+        hasGoogleAccessToken: !!process.env['GOOGLE_ACCESS_TOKEN'],
+        hasGoogleDriveParentFolder:
+          !!process.env['GOOGLE_DRIVE_PARENT_FOLDER_ID'],
+        nodeEnv: process.env['NODE_ENV'] || 'production',
       },
     };
-
-    if (!googleDriveConfigured) {
-      // Google Drive not configured
-    }
 
     return res.status(200).json(health);
   } catch (error: any) {

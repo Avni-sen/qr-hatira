@@ -1,17 +1,12 @@
 export const environment = {
-  production: true,
+  production: false, // Development environment
+  apiUrl: 'https://wedding-photo-share.vercel.app/api', // Production API kullan
+
+  // Public Google konfigürasyonu (client-side için güvenli)
   googleClientId:
     '174847816124-d5aukd19ghd6vmplapjiqiii3dlkjj08.apps.googleusercontent.com',
   googleDriveParentFolderId: '13Z6EEbZKUBwfRnsoXJvrCQlweJL9phg0',
-  googleAccessToken:
-    'ya29.A0AS3H6NxnF16Pc1NhwK5_sYWK07pqRGIDr0C2uhbfF8Fl1SX8nkKjy88wiRuuTaQPSeLjWrMU9Q3-zu3YADzVyYmzkyxRw14dxbts4qUU4EJ-XRgCcpVWO_ysBC3KTIdeTOChiI_IxIqPX9v_G5nmPWTtb-H0qDX6f1i7gWKQTykRF7SEJNxLg3bZRFZWYtxxDdc3yqsaCgYKAQESARcSFQHGX2MizHvUkdE_U-5Ur8So890fhw0206',
-  googleRefreshToken:
-    '1//041X6xKnJdkW0CgYIARAAGAQSNwF-L9IrsjEe-hk6ET6r1Hg_wI9B7mIIOxo-B-Sfw-UMqxcbA1uROOnSBpWlYq9usoVeTw9IIeo',
-  nodeEnv: 'development',
-  googleDriveClientEmail:
-    'google-api-demo-user@second-atom-471020-v2.iam.gserviceaccount.com',
-  googleDrivePrivateKey:
-    '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC4WPrlPfSq+Jy/\nJ3Z5M3hD1cJK4xfcRPxpt9LvOQtGrKC+sSt2HRiQhoap73dqu6n9/qLh78O7jzLe\nsNgT61o28nPdtJn+dkR35ulkfKRmiT3PluowOwIfW5hW0OZAzqXFz4XTxFq4SmeL\nNpez9nZA6218kpDwcKWEKPvKRZ2ATD5az7NwHbQestvPY3FRlbiwdhfE/Rff5hHC\nN3oZ07gRkHJFY50acVNK5PlXgxIC0wkE4/FvFFR9bZ4gWXukO2eGwTs8RijAnX59\nxCkL3HtqB6n/NxWiEuvVPPeyizjzUbTaNOP4DZU/h66Hpqrx7QQXxWm67rRRDA2c\nXBrLI9hZAgMBAAECggEAEV9RRYkxJWuIWfs+Du3qx3m9dZExDnDx2ISaPDED/wUF\noPLRRbA4QGZtClamykglHOqCLwiJSYOVJ6dCtZ3YQpVWle4PFQvQJ/x6wh184KzO\nRmHSb/kfmhTnpkbJbBINTTbhRbObWQKp/1SFt0/ilPuatcKaJg53ipzSHZ2x2gUr\n9Jq5vzC0BQtGrNt+xvB6sae9Zp+EEs8xJF9tccw7n9ILm0E8HcDoefl1v0TUVUgg\n5gCt8kaMzDDkTl7E7V+xFiS5Zlke8lQ9JNUjQ8gHN5EPer7RVbCrMiOpu7hUpsu6\nZgdBf4OFYosOy/9Bc0Sj9ivz8WwG4brCdb58hay2gQKBgQD8K2vQ8kxa5jj0y89d\nF8Zqr46KIJxUx49Uh8Xv+zwtccTWsPqVuhREAHwjw8vceGq7ezsaDcEJ99inkRoO\no5LlWZ9Q6oIwFVOGcN2HXlwnIN6cFaqxY3rzCT1gok63t0nSjktmQSBkns1rUMQY\nA3uprG4nYQaSZwng3amLr1brZwKBgQC7JdQJNcH2KeopqUqktIjvvSfsjKFQQ0/x\neWzSW96cscx143amlt7Kh1hD+L+ufUozv/pAtV3w39/isZt5w3OD7I9dQmg6hAcB\nn2BTtlFyz3MKxSRuAX67qjjMJV+jwfvlii96x/ZFmWn1U3vhv8P0f+drlEVNHavI\nlDZxwTiGPwKBgQCCOhZa+NaP1vcxDJQRWnbgn7s4ADFb4xdVKy0Aizl/qpJh4VH3\nwvo2SB3UBoigWhucqL5T7Sh08mcT2m6fgsAY65jIG+OR22GgO2dcQlHK70GnT9Uv\n+NUE8A+feRK389MPBudPbnDBJfWl5zbtw9a4QFE+yu+u6cGDPFYTykBUHwKBgA1e\ntHk79/FoKSx0xbpik23dK58ApP2g8XMk45tbqNm08hByAaYBHUWGyc2BVeBXXxe3\nXV+GFYIB3HLLkXnvdq80FUHqXpvflsiM5ErWuZbkLynTz7h0LuOlU41yFhUS5LYP\nWzkAVB3AygsWvcDw/ETZZmUPIKxTtFQOEp2p2intAoGALlN6XwQhd95yfYlOs3xA\ncvuR+tD3xFVY1v/erexT4kQ1efOSTOUaLP27REj+V7ml/abJipAVsKXGjyVu99Cw\nHoocz7ejaD1CaLXCKk7u6yj8uat5eSyHkN8bhTcPxrCxVV1A9Evii9evBW6pko6g\nhKpDcpyoAV9x+rouolxMPKw=\n-----END PRIVATE KEY-----',
-  googleProjectId: 'second-atom-471020-v2',
-  googleClientSecret: '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',
+
+  // Debug mode
+  enableDebugLogs: true,
 };

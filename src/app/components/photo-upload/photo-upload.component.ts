@@ -1,8 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
-import { FileService } from '../../services/file.service';
 import { GoogleDriveDirectService } from '../../services/google-drive-direct.service';
 
 export interface UploadedFile {
@@ -35,18 +33,14 @@ export class PhotoUploadComponent {
     files: [],
   };
 
-  constructor(
-    private readonly fileService: FileService,
-    private readonly driveService: GoogleDriveDirectService
-  ) {}
-
   public isDragOver = false;
   public uploadProgress = 0;
   public isUploading = false;
   public errorMessage = '';
   public successMessage = '';
-  public folderLink = '';
   public uploadedFileCount = 0;
+
+  constructor(private readonly driveService: GoogleDriveDirectService) {}
 
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -139,51 +133,29 @@ export class PhotoUploadComponent {
       return;
     }
 
+    if (!this.guestInfo.firstName.trim() || !this.guestInfo.lastName.trim()) {
+      this.errorMessage = 'Lütfen ad ve soyad bilgilerini giriniz.';
+      return;
+    }
+
     this.isUploading = true;
     this.errorMessage = '';
     this.successMessage = '';
+    this.uploadProgress = 0;
 
     try {
+      console.log('📤 Dosya yükleme başlatılıyor...');
+
       // Dosya listesini oluştur
       const files: File[] = this.guestInfo.files.map(
         (uploadedFile) => uploadedFile.file
       );
 
       // Kişiye özel klasör oluşturup tüm dosyaları yükle
-      this.uploadFilesWithPersonalFolder(files);
-    } catch (error) {
-      this.errorMessage = 'Dosya yükleme sırasında bir hata oluştu.';
-      console.error('Upload error:', error);
-      this.isUploading = false;
-      this.uploadProgress = 0;
-    }
-  }
-
-  private saveFileLocally(uploadedFile: UploadedFile) {
-    // Local storage simülasyonu - gerçek uygulamada backend'e gönderilecek
-    const guestData = {
-      firstName: this.guestInfo.firstName,
-      lastName: this.guestInfo.lastName,
-      fileName: uploadedFile.name,
-      fileSize: uploadedFile.size,
-      fileType: uploadedFile.type,
-      uploadDate: new Date().toISOString(),
-    };
-
-    // LocalStorage'a ekle (dev amaçlı)
-    const existingUploads = JSON.parse(
-      localStorage.getItem('weddingUploads') || '[]'
-    );
-    existingUploads.push(guestData);
-    localStorage.setItem('weddingUploads', JSON.stringify(existingUploads));
-  }
-
-  private async uploadFilesWithPersonalFolder(files: File[]) {
-    try {
       const results = await this.driveService.uploadFilesToPersonalFolder(
         files,
-        this.guestInfo.firstName,
-        this.guestInfo.lastName
+        this.guestInfo.firstName.trim(),
+        this.guestInfo.lastName.trim()
       );
 
       // Başarılı upload
@@ -194,52 +166,18 @@ export class PhotoUploadComponent {
       // Parent component'e bildirim gönder
       this.filesUploaded.emit(this.guestInfo);
 
-      // Formu temizle
+      // 5 saniye sonra formu temizle
       setTimeout(() => {
         this.resetForm();
-        this.isUploading = false;
       }, 5000);
     } catch (error) {
-      console.error('Personal folder upload error:', error);
-      this.errorMessage = 'Dosya yükleme sırasında bir hata oluştu.';
-      this.isUploading = false;
+      console.error('❌ Dosya yükleme hatası:', error);
+      this.errorMessage =
+        'Dosya yükleme sırasında bir hata oluştu. Lütfen tekrar deneyin.';
       this.uploadProgress = 0;
-    }
-  }
-
-  private async uploadMultipleFiles(files: File[]) {
-    let uploadedCount = 0;
-    const totalFiles = files.length;
-
-    for (let i = 0; i < files.length; i++) {
-      try {
-        const observable = await this.driveService.uploadFileToDrive(files[i]);
-        await firstValueFrom(observable);
-        uploadedCount++;
-
-        // Progress güncelle
-        this.uploadProgress = (uploadedCount / totalFiles) * 100;
-      } catch (error) {
-        console.error(`Dosya yükleme hatası: ${files[i].name}`, error);
-      }
-    }
-
-    // Tüm yüklemeler tamamlandı
-    this.successMessage = `${uploadedCount}/${totalFiles} dosya başarıyla Google Drive'a yüklendi! 🎉`;
-    this.uploadedFileCount = uploadedCount;
-
-    // Parent component'e bildirim gönder
-    this.filesUploaded.emit(this.guestInfo);
-
-    // Formu temizle
-    setTimeout(() => {
-      this.resetForm();
+    } finally {
       this.isUploading = false;
-    }, 5000);
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    }
   }
 
   private resetForm() {
@@ -250,8 +188,8 @@ export class PhotoUploadComponent {
     };
     this.successMessage = '';
     this.errorMessage = '';
-    this.folderLink = '';
     this.uploadedFileCount = 0;
+    this.uploadProgress = 0;
   }
 
   formatFileSize(bytes: number): string {

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, firstValueFrom } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { TokenManagerService } from './token-manager.service';
 
@@ -22,8 +22,8 @@ export class GoogleDriveDirectService {
   private readonly PARENT_FOLDER_ID = environment.googleDriveParentFolderId;
 
   constructor(
-    private http: HttpClient,
-    private tokenManager: TokenManagerService
+    private readonly http: HttpClient,
+    private readonly tokenManager: TokenManagerService
   ) {}
 
   // Token manager'dan geçerli access token al
@@ -52,36 +52,35 @@ export class GoogleDriveDirectService {
       accessToken
     );
 
+    console.log(`📁 ${folderName} klasörü oluşturuldu: ${personalFolder.id}`);
+
     // 2. Tüm dosyaları bu klasöre yükle
     const uploadResults: DriveUploadResponse[] = [];
+    let successCount = 0;
+
     for (const file of files) {
       try {
+        console.log(`📤 ${file.name} yükleniyor...`);
         const result = await this.uploadFileToFolder(
           file,
           personalFolder.id,
           accessToken
         );
         uploadResults.push(result);
+        successCount++;
+        console.log(`✅ ${file.name} yüklendi`);
       } catch (error) {
         console.error(`❌ Yükleme hatası: ${file.name}`, error);
+        // Hata olsa bile devam et
       }
     }
 
+    console.log(`🎉 ${successCount}/${files.length} dosya başarıyla yüklendi`);
     return uploadResults;
   }
 
-  // Doğrudan Google Drive API'sine dosya yükle (tek dosya)
-  async uploadFileToDrive(
-    file: File,
-    fileName?: string
-  ): Promise<Observable<DriveUploadResponse>> {
-    const accessToken = await this.getAccessToken();
-
-    return this.uploadFileDirectly(file, this.PARENT_FOLDER_ID, accessToken);
-  }
-
   // Klasör oluşturma
-  async createFolder(
+  private async createFolder(
     folderName: string,
     parentFolderId: string,
     accessToken: string
@@ -106,15 +105,19 @@ export class GoogleDriveDirectService {
         )
       );
 
-      return response!;
+      if (!response) {
+        throw new Error('Klasör oluşturma yanıtı alınamadı');
+      }
+
+      return response;
     } catch (error) {
-      console.error('Klasör oluşturma hatası:', error);
+      console.error('❌ Klasör oluşturma hatası:', error);
       throw error;
     }
   }
 
   // Belirli klasöre dosya yükleme
-  async uploadFileToFolder(
+  private async uploadFileToFolder(
     file: File,
     folderId: string,
     accessToken: string
@@ -143,70 +146,14 @@ export class GoogleDriveDirectService {
         })
       );
 
-      return response!;
+      if (!response) {
+        throw new Error('Dosya yükleme yanıtı alınamadı');
+      }
+
+      return response;
     } catch (error) {
-      console.error('Dosya yükleme hatası:', error);
+      console.error(`❌ Dosya yükleme hatası: ${file.name}`, error);
       throw error;
     }
-  }
-
-  // Doğrudan Google Drive API'sine yükleme (multipart upload)
-  uploadFileDirectly(
-    file: File,
-    folderId: string,
-    accessToken: string
-  ): Observable<DriveUploadResponse> {
-    // Multipart form data oluştur
-    const formData = new FormData();
-
-    // Metadata (JSON)
-    const metadata = {
-      name: file.name,
-      parents: [this.PARENT_FOLDER_ID],
-    };
-
-    // Metadata'yı JSON blob olarak ekle
-    formData.append(
-      'metadata',
-      new Blob([JSON.stringify(metadata)], { type: 'application/json' })
-    );
-    // Dosyayı ekle
-    formData.append('file', file);
-
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${accessToken}`,
-      // Content-Type'ı FormData otomatik set edecek, manuel ekleme
-    });
-
-    return this.http.post<DriveUploadResponse>(
-      this.DRIVE_UPLOAD_URL,
-      formData,
-      {
-        headers,
-      }
-    );
-  }
-
-  // Birden fazla dosya yükleme
-  uploadMultipleFiles(
-    files: File[],
-    accessToken: string
-  ): Observable<DriveUploadResponse[]> {
-    const uploadPromises = files.map((file) =>
-      firstValueFrom(
-        this.uploadFileDirectly(file, this.PARENT_FOLDER_ID, accessToken)
-      )
-    );
-
-    return new Observable((observer) => {
-      Promise.all(uploadPromises)
-        .then((results) => {
-          observer.next(results as DriveUploadResponse[]);
-          observer.complete();
-        })
-        .catch((error) => {
-          observer.error(error);
-        });
-    });
   }
 }

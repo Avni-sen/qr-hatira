@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import {
   PhotoUploadComponent,
@@ -6,6 +6,7 @@ import {
 } from './components/photo-upload/photo-upload.component';
 import { CommonModule } from '@angular/common';
 import { TokenManagerService } from './services/token-manager.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -13,7 +14,7 @@ import { TokenManagerService } from './services/token-manager.service';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   title = 'wedding-photo-share';
   tokenStatus = { isValid: false, expiresIn: 0 };
   Math = Math;
@@ -22,16 +23,37 @@ export class AppComponent implements OnInit {
   showSuccess = false;
   qrCodeData = '';
 
-  constructor(private tokenManager: TokenManagerService) {}
+  private tokenSubscription?: Subscription;
+  private statusUpdateInterval?: ReturnType<typeof setInterval>;
+
+  constructor(private readonly tokenManager: TokenManagerService) {}
 
   ngOnInit() {
-    this.tokenManager.token$.subscribe(() => {
-      this.tokenStatus = this.tokenManager.getTokenStatus();
+    // Token değişikliklerini dinle
+    this.tokenSubscription = this.tokenManager.token$.subscribe(() => {
+      this.updateTokenStatus();
     });
 
-    setInterval(() => {
-      this.tokenStatus = this.tokenManager.getTokenStatus();
+    // Her 30 saniyede bir token durumunu güncelle
+    this.statusUpdateInterval = setInterval(() => {
+      this.updateTokenStatus();
     }, 30000);
+
+    // İlk güncelleme
+    this.updateTokenStatus();
+  }
+
+  ngOnDestroy() {
+    if (this.tokenSubscription) {
+      this.tokenSubscription.unsubscribe();
+    }
+    if (this.statusUpdateInterval) {
+      clearInterval(this.statusUpdateInterval);
+    }
+  }
+
+  private updateTokenStatus() {
+    this.tokenStatus = this.tokenManager.getTokenStatus();
   }
 
   startUpload() {
@@ -82,5 +104,18 @@ export class AppComponent implements OnInit {
     } catch (error) {
       console.error('❌ Token yenileme hatası:', error);
     }
+  }
+
+  // Token durumu için yardımcı method'lar
+  getTokenExpiryMinutes(): number {
+    return Math.floor(this.tokenStatus.expiresIn / 60);
+  }
+
+  getTokenExpirySeconds(): number {
+    return this.tokenStatus.expiresIn % 60;
+  }
+
+  isTokenExpiringSoon(): boolean {
+    return this.tokenStatus.expiresIn < 300; // 5 dakikadan az
   }
 }
